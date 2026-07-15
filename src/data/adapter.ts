@@ -1,0 +1,33 @@
+import type { ChecksMap, CurrentUser, NudgedMap, Week } from '../lib/types'
+
+/**
+ * The persistence boundary. Two implementations:
+ *   - mockAdapter      → seed data + localStorage (runs with zero setup)
+ *   - supabaseAdapter  → shared Postgres via @supabase/supabase-js
+ * The app talks only to this interface, so the UI is identical either way.
+ */
+export interface DataAdapter {
+  readonly mode: 'mock' | 'supabase'
+
+  /** Weeks the current user is allowed to see (owner: all trainers; trainer: self). */
+  loadWeeks(user: CurrentUser): Promise<Week[]>
+
+  /** Check-in overrides layered on top of loadWeeks (mock only; supabase returns {}). */
+  loadChecks(user: CurrentUser): Promise<ChecksMap>
+
+  /** Which `${weekIdx}:${trainerId}` reminders have already gone out. */
+  loadNudged(user: CurrentUser): Promise<NudgedMap>
+
+  /** Persist a single check-in cell toggle. */
+  setCheck(
+    user: CurrentUser,
+    weekIdx: number,
+    trainerId: string,
+    clientName: string,
+    field: 'water' | 'weekly',
+    value: boolean,
+  ): Promise<void>
+
+  /** Record + (in production) actually send a reminder to one trainer. */
+  sendReminder(user: CurrentUser, weekIdx: number, trainerId: string): Promise<void>
+}
