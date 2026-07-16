@@ -8,7 +8,14 @@ import type {
   WeeklyMember,
 } from '../lib/types'
 import { supabase } from '../lib/supabase'
+import { ROSTER } from './seed'
 import type { DataAdapter } from './adapter'
+
+// Canonical display order from the design (Paola, Roma, Natalia, …). Trainers
+// not in the seed roster (e.g. real ones added later) fall to the end, keeping
+// their query order among themselves.
+const ROSTER_ORDER = new Map(ROSTER.map((t, i) => [t.id, i]))
+const orderOf = (id: string) => ROSTER_ORDER.get(id) ?? Number.MAX_SAFE_INTEGER
 
 // --- row shapes (match supabase/migrations/0001_init.sql) ---
 interface TrainerRow {
@@ -129,8 +136,8 @@ export const supabaseAdapter: DataAdapter = {
             }
           })
           .filter((m): m is WeeklyMember => m !== null)
-          // keep a stable roster order
-          .sort((a, b) => a.name.localeCompare(b.name))
+          // preserve the design's fixed roster order (not alphabetical)
+          .sort((a, b) => orderOf(a.id) - orderOf(b.id))
 
         return {
           label: wk.label,
