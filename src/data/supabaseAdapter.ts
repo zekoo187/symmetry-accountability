@@ -97,7 +97,6 @@ export const supabaseAdapter: DataAdapter = {
     const checkins = (checkinsRes.data ?? []) as CheckinRow[]
     const wins = (winsRes.data ?? []) as WinRow[]
 
-    const clientById = new Map(clients.map((c) => [c.id, c]))
     const trainerById = new Map(trainers.map((t) => [t.id, t]))
 
     return weeks
@@ -109,14 +108,22 @@ export const supabaseAdapter: DataAdapter = {
           .map((s): WeeklyMember | null => {
             const t = trainerById.get(s.trainer_id)
             if (!t) return null
-            const memberClients: ClientCheckin[] = wkCheckins
-              .filter((ci) => clientById.get(ci.client_id)?.trainer_id === s.trainer_id)
-              .map((ci) => ({
-                name: clientById.get(ci.client_id)?.name ?? '—',
-                water: ci.hydration_done,
-                weekly: ci.weighin_done,
-                win: ci.win_text ?? '',
-              }))
+            // Drive the list from the trainer's roster, not from check-in rows,
+            // so a newly added client appears immediately (unchecked) before
+            // they have any check-in record for this week.
+            const ciByClient = new Map(wkCheckins.map((ci) => [ci.client_id, ci]))
+            const memberClients: ClientCheckin[] = clients
+              .filter((c) => c.trainer_id === s.trainer_id)
+              .sort((a, b) => a.name.localeCompare(b.name))
+              .map((c) => {
+                const ci = ciByClient.get(c.id)
+                return {
+                  name: c.name,
+                  water: ci?.hydration_done ?? false,
+                  weekly: ci?.weighin_done ?? false,
+                  win: ci?.win_text ?? '',
+                }
+              })
             return {
               id: t.id,
               name: t.name,
@@ -187,11 +194,34 @@ export const supabaseAdapter: DataAdapter = {
     if (clErr) throw clErr
 
     const column = field === 'water' ? 'hydration_done' : 'weighin_done'
+    // Upsert: a client added mid-week has no check-in row yet.
+    const { error } = await sb.from('checkins').upsert(
+      {
+        client_id: (cl as { id: string }).id,
+        week_id: (wk as { id: string }).id,
+        [column]: value,
+      },
+      { onConflict: 'client_id,week_id' },
+    )
+    if (error) throw error
+  },
+
+  async addClient(_user, trainerId, clientName): Promise<void> {
+    const sb = db()
+    const name = clientName.trim()
+    if (!name) return
+    const { error } = await sb.from('clients').insert({ trainer_id: trainerId, name })
+    if (error) throw error
+  },
+
+  async removeClient(_user, trainerId, clientName): Promise<void> {
+    const sb = db()
+    // check-in rows cascade via the FK
     const { error } = await sb
-      .from('checkins')
-      .update({ [column]: value })
-      .eq('week_id', (wk as { id: string }).id)
-      .eq('client_id', (cl as { id: string }).id)
+      .from('clients')
+      .delete()
+      .eq('trainer_id', trainerId)
+      .eq('name', clientName)
     if (error) throw error
   },
 

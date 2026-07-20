@@ -5,12 +5,15 @@ import { CheckinChip } from './primitives'
 export function ClientCheckinRow({
   client,
   onToggle,
+  onRemove,
   bg = '#fff',
   showWin = false,
   compact = false,
 }: {
   client: DerivedClient
   onToggle: (field: 'water' | 'weekly', next: boolean) => void
+  /** When provided, shows a small remove (×) control for this client. */
+  onRemove?: () => void
   bg?: string
   showWin?: boolean
   compact?: boolean
@@ -60,6 +63,25 @@ export function ClientCheckinRow({
         >
           🏆 {client.win}
         </span>
+      )}
+      {onRemove && (
+        <button
+          onClick={onRemove}
+          title={`Remove ${client.name}`}
+          aria-label={`Remove ${client.name}`}
+          style={{
+            border: 'none',
+            background: 'transparent',
+            color: color.faint,
+            cursor: 'pointer',
+            fontSize: 15,
+            lineHeight: 1,
+            padding: '2px 4px',
+            flex: 'none',
+          }}
+        >
+          ×
+        </button>
       )}
     </div>
   )

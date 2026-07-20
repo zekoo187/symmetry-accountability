@@ -30,4 +30,10 @@ export interface DataAdapter {
 
   /** Record + (in production) actually send a reminder to one trainer. */
   sendReminder(user: CurrentUser, weekIdx: number, trainerId: string): Promise<void>
+
+  /** Add a client to a trainer's roster. Names are unique per trainer. */
+  addClient(user: CurrentUser, trainerId: string, clientName: string): Promise<void>
+
+  /** Remove a client (and their check-in history) from a trainer's roster. */
+  removeClient(user: CurrentUser, trainerId: string, clientName: string): Promise<void>
 }

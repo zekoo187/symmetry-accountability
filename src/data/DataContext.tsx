@@ -33,6 +33,8 @@ interface DataContextValue {
   ) => void
   sendReminder: (weekIdx: number, trainerId: string) => void
   sendReminders: (weekIdx: number, trainerIds: string[]) => void
+  addClient: (trainerId: string, clientName: string) => Promise<void>
+  removeClient: (trainerId: string, clientName: string) => Promise<void>
 }
 
 const DataContext = createContext<DataContextValue | null>(null)
@@ -112,6 +114,36 @@ export function DataProvider({ user, children }: { user: CurrentUser; children: 
     [user],
   )
 
+  // Re-pull the roster after a client is added/removed.
+  const refreshWeeks = useCallback(async () => {
+    const w = await adapter.loadWeeks(user)
+    if (mounted.current) setWeeks(w)
+  }, [user])
+
+  const addClient = useCallback<DataContextValue['addClient']>(
+    async (trainerId, clientName) => {
+      try {
+        await adapter.addClient(user, trainerId, clientName)
+        await refreshWeeks()
+      } catch (e) {
+        if (mounted.current) setError(e instanceof Error ? e.message : 'Failed to add client')
+      }
+    },
+    [user, refreshWeeks],
+  )
+
+  const removeClient = useCallback<DataContextValue['removeClient']>(
+    async (trainerId, clientName) => {
+      try {
+        await adapter.removeClient(user, trainerId, clientName)
+        await refreshWeeks()
+      } catch (e) {
+        if (mounted.current) setError(e instanceof Error ? e.message : 'Failed to remove client')
+      }
+    },
+    [user, refreshWeeks],
+  )
+
   const value = useMemo<DataContextValue>(
     () => ({
       loading,
@@ -123,8 +155,21 @@ export function DataProvider({ user, children }: { user: CurrentUser; children: 
       toggleCheck,
       sendReminder,
       sendReminders,
+      addClient,
+      removeClient,
     }),
-    [loading, error, weeks, checks, nudged, toggleCheck, sendReminder, sendReminders],
+    [
+      loading,
+      error,
+      weeks,
+      checks,
+      nudged,
+      toggleCheck,
+      sendReminder,
+      sendReminders,
+      addClient,
+      removeClient,
+    ],
   )
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>

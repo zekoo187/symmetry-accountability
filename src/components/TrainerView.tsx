@@ -9,9 +9,11 @@ import { WeekStepper } from './WeekStepper'
 import { ClientCheckinRow } from './ClientCheckinRow'
 
 export function TrainerView({ user }: { user: CurrentUser }) {
-  const { weeks, checks, toggleCheck } = useData()
+  const { weeks, checks, toggleCheck, addClient, removeClient } = useData()
   const { signOut } = useAuth()
   const [weekIdx, setWeekIdx] = useState(0)
+  const [newClient, setNewClient] = useState('')
+  const [busy, setBusy] = useState(false)
 
   const week = weeks[weekIdx]
   const rawMember = week?.members.find((m) => m.id === user.trainerId) ?? week?.members[0]
@@ -90,9 +92,75 @@ export function TrainerView({ user }: { user: CurrentUser }) {
               bg="#fff"
               showWin
               onToggle={(field, next) => toggleCheck(weekIdx, m.id, c.name, field, next)}
+              onRemove={() => {
+                if (confirm(`Remove ${c.name} from your client list?`)) {
+                  void removeClient(m.id, c.name)
+                }
+              }}
             />
           ))}
+          {m.clients.length === 0 && (
+            <div
+              style={{
+                border: `1px dashed ${color.border}`,
+                borderRadius: 10,
+                padding: '16px 14px',
+                fontSize: 13,
+                color: color.muted,
+                textAlign: 'center',
+                lineHeight: 1.5,
+              }}
+            >
+              No clients yet — add your first one below.
+            </div>
+          )}
         </div>
+
+        {/* add a client */}
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault()
+            const name = newClient.trim()
+            if (!name || busy) return
+            setBusy(true)
+            await addClient(m.id, name)
+            setNewClient('')
+            setBusy(false)
+          }}
+          style={{ display: 'flex', gap: 8, marginTop: 10 }}
+        >
+          <input
+            value={newClient}
+            onChange={(e) => setNewClient(e.target.value)}
+            placeholder="Add a client's name…"
+            style={{
+              flex: 1,
+              padding: '10px 12px',
+              borderRadius: 10,
+              border: `1px solid ${color.border}`,
+              fontSize: 13.5,
+              fontFamily: font.body,
+              background: '#fff',
+            }}
+          />
+          <button
+            type="submit"
+            disabled={!newClient.trim() || busy}
+            style={{
+              padding: '10px 16px',
+              borderRadius: 10,
+              border: 'none',
+              background: newClient.trim() && !busy ? color.ink : color.borderSoft,
+              color: newClient.trim() && !busy ? '#fff' : color.faint,
+              fontSize: 13.5,
+              fontWeight: 600,
+              cursor: newClient.trim() && !busy ? 'pointer' : 'default',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {busy ? 'Adding…' : 'Add'}
+          </button>
+        </form>
       </div>
 
       <div style={{ padding: '16px 18px 24px' }}>

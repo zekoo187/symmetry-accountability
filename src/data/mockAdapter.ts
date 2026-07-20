@@ -5,6 +5,8 @@ import type { DataAdapter } from './adapter'
 
 const CHECKS_KEY = 'sf_checks'
 const NUDGED_KEY = 'sf_nudged'
+const ADDED_KEY = 'sf_added_clients' // { [trainerId]: string[] }
+const REMOVED_KEY = 'sf_removed_clients' // { [trainerId]: string[] }
 
 function read<T>(key: string, fallback: T): T {
   try {
@@ -23,12 +25,26 @@ function write(key: string, value: unknown): void {
   }
 }
 
-/** Deep clone the seed so callers never mutate the module-level constant. */
+type NameListMap = Record<string, string[]>
+
+/**
+ * Deep clone the seed, then apply the local roster overlay: clients the user
+ * removed are dropped, clients they added are appended (unchecked).
+ */
 function cloneWeeks(): Week[] {
+  const added = read<NameListMap>(ADDED_KEY, {})
+  const removed = read<NameListMap>(REMOVED_KEY, {})
   return WEEKS.map((w) => ({
     ...w,
     wins: w.wins.map((x) => ({ ...x })),
-    members: w.members.map((m) => ({ ...m, clients: m.clients.map((c) => ({ ...c })) })),
+    members: w.members.map((m) => {
+      const gone = new Set(removed[m.id] ?? [])
+      const kept = m.clients.filter((c) => !gone.has(c.name)).map((c) => ({ ...c }))
+      const extra = (added[m.id] ?? [])
+        .filter((n) => !gone.has(n) && !kept.some((c) => c.name === n))
+        .map((n) => ({ name: n, water: false, weekly: false, win: '' }))
+      return { ...m, clients: [...kept, ...extra].sort((a, b) => a.name.localeCompare(b.name)) }
+    }),
   }))
 }
 
@@ -65,5 +81,36 @@ export const mockAdapter: DataAdapter = {
     const nudged = read<NudgedMap>(NUDGED_KEY, {})
     nudged[`${weekIdx}:${trainerId}`] = true
     write(NUDGED_KEY, nudged)
+  },
+
+  async addClient(_user, trainerId, clientName): Promise<void> {
+    const name = clientName.trim()
+    if (!name) return
+    const added = read<NameListMap>(ADDED_KEY, {})
+    const removed = read<NameListMap>(REMOVED_KEY, {})
+    // un-remove if they'd previously been deleted
+    if (removed[trainerId]?.includes(name)) {
+      removed[trainerId] = removed[trainerId].filter((n) => n !== name)
+      write(REMOVED_KEY, removed)
+    }
+    const list = added[trainerId] ?? []
+    if (!list.includes(name)) {
+      added[trainerId] = [...list, name]
+      write(ADDED_KEY, added)
+    }
+  },
+
+  async removeClient(_user, trainerId, clientName): Promise<void> {
+    const added = read<NameListMap>(ADDED_KEY, {})
+    if (added[trainerId]?.includes(clientName)) {
+      added[trainerId] = added[trainerId].filter((n) => n !== clientName)
+      write(ADDED_KEY, added)
+    }
+    const removed = read<NameListMap>(REMOVED_KEY, {})
+    const list = removed[trainerId] ?? []
+    if (!list.includes(clientName)) {
+      removed[trainerId] = [...list, clientName]
+      write(REMOVED_KEY, removed)
+    }
   },
 }
