@@ -4,6 +4,7 @@ import type { DerivedMember, WeekTotals } from '../lib/derive'
 import type { DrawerState } from './DetailDrawer'
 import { Avatar, Sparkline, StatusPill } from './primitives'
 import { WeekStepper } from './WeekStepper'
+import { SummaryButton } from './SummaryButton'
 import { ChangePasswordLink } from '../account/AccountModal'
 
 const NAV_ITEMS = ['Overview', 'Trainers', 'Check-ins', 'Sessions', 'Wins'] as const
@@ -177,6 +178,7 @@ export function DesktopDashboard(props: {
                     onPrev={onPrevWeek}
                     onNext={onNextWeek}
                   />
+                  <SummaryButton week={week} members={members} totals={totals} />
                   <button
                     onClick={onNudgeAll}
                     style={{

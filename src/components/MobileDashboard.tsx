@@ -5,6 +5,7 @@ import { Avatar, Meter, SectionLabel, StatusPill } from './primitives'
 import { WeekStepper } from './WeekStepper'
 import { ClientCheckinRow } from './ClientCheckinRow'
 import { NudgeButton } from './NudgeButton'
+import { SummaryButton } from './SummaryButton'
 import { ChangePasswordLink } from '../account/AccountModal'
 
 export function MobileDashboard(props: {
@@ -143,6 +144,10 @@ export function MobileDashboard(props: {
           <StatChip label="Sessions" value={String(totals.sessions)} />
           <StatChip label="Show rate" value={`${totals.showRate}%`} />
           <StatChip label="No-shows" value={String(totals.noShows)} valueColor={color.amber} />
+        </div>
+
+        <div style={{ padding: '10px 14px 0' }}>
+          <SummaryButton week={week} members={members} totals={totals} compact />
         </div>
 
         {/* trainer cards */}
