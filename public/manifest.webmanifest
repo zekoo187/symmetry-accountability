@@ -1,0 +1,24 @@
+{
+  "name": "Symmetry Fitness — Accountability",
+  "short_name": "Symmetry",
+  "description": "Weekly trainer accountability dashboard — sessions, attendance and client check-ins.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#EFEAE1",
+  "theme_color": "#23201c",
+  "icons": [
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
