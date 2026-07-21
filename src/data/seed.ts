@@ -31,8 +31,10 @@ function build(data: Record<string, MemberData>): WeeklyMember[] {
 
 export const WEEKS: Week[] = [
   {
+    id: 'w0',
     label: 'Week of Jul 6 – Jul 12',
     short: 'Jul 6–12',
+    startDate: '2026-07-06',
     wins: [
       { stat: '−4 lb', text: 'Santiago’s client Ana hit a 4 lb loss 🎉' },
       { stat: '100%', text: 'Paola: every client logged their weekly weigh-in' },
@@ -78,8 +80,10 @@ export const WEEKS: Week[] = [
     }),
   },
   {
+    id: 'w1',
     label: 'Week of Jun 29 – Jul 5',
     short: 'Jun 29–Jul 5',
+    startDate: '2026-06-29',
     wins: [
       { stat: '−3 lb', text: 'Simona’s client Gus down 3 lb before his meet' },
       { stat: '92%', text: 'Team show rate up 6 points on last week' },
@@ -119,8 +123,10 @@ export const WEEKS: Week[] = [
     }),
   },
   {
+    id: 'w2',
     label: 'Week of Jun 22 – Jun 28',
     short: 'Jun 22–28',
+    startDate: '2026-06-22',
     wins: [{ stat: '✓', text: 'First week every trainer sent all daily check-ins' }],
     members: build({
       PA: {

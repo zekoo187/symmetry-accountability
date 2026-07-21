@@ -27,6 +27,49 @@ export function effCheck(checks: ChecksMap, key: string, base: boolean): boolean
   return key in checks ? checks[key] : base
 }
 
+/**
+ * Status is derived from the reported numbers rather than stored, so it can
+ * never drift from the data. A trainer with nothing set up yet (no scheduled
+ * sessions and no clients) is left on 'track' instead of being flagged.
+ */
+export function deriveStatus(
+  showRate: number,
+  checkinRate: number,
+  scheduled: number,
+  totalClients: number,
+): StatusKey {
+  if (scheduled === 0 && totalClients === 0) return 'track'
+  if (showRate < 70 || checkinRate < 0.5) return 'behind'
+  if (showRate < 88 || checkinRate < 0.8) return 'risk'
+  return 'track'
+}
+
+/**
+ * Build the 46×18 trend polyline from a trainer's real show rate over the last
+ * few weeks (oldest → newest). Returns '' when there isn't enough history.
+ */
+export function sparklineFor(weeks: Week[], weekIdx: number, trainerId: string): string {
+  const rates: number[] = []
+  for (let i = Math.min(weeks.length - 1, weekIdx + 4); i >= weekIdx; i--) {
+    const m = weeks[i]?.members.find((x) => x.id === trainerId)
+    if (!m) continue
+    const sched = m.showed + m.noShows + m.cancels
+    if (sched <= 0) continue
+    rates.push(Math.round((m.showed / sched) * 100))
+  }
+  if (rates.length < 2) return ''
+  const W = 46
+  const step = W / (rates.length - 1)
+  // map 40..100% onto y 16..2 (lower y = better)
+  return rates
+    .map((r, i) => {
+      const clamped = Math.max(40, Math.min(100, r))
+      const y = 16 - ((clamped - 40) / 60) * 14
+      return `${Math.round(i * step)},${Math.round(y)}`
+    })
+    .join(' ')
+}
+
 export interface DerivedClient {
   name: string
   water: boolean
@@ -77,16 +120,18 @@ export interface DerivedMember {
 
 export function deriveMember(
   m: WeeklyMember,
-  weekIdx: number,
+  weekId: string,
   checks: ChecksMap,
   expanded: boolean,
+  points?: string,
 ): DerivedMember {
-  const showRate = Math.round((m.showed / m.sched) * 100)
-  const s = statusMeta[m.status]
+  // scheduled is the sum of what happened, so it can't disagree with the parts
+  const sched = m.showed + m.noShows + m.cancels
+  const showRate = sched > 0 ? Math.round((m.showed / sched) * 100) : 0
 
   const clients: DerivedClient[] = m.clients.map((c) => {
-    const waterKey = checkKeyStr({ weekIdx, trainerId: m.id, clientName: c.name, field: 'water' })
-    const weeklyKey = checkKeyStr({ weekIdx, trainerId: m.id, clientName: c.name, field: 'weekly' })
+    const waterKey = checkKeyStr({ weekId, trainerId: m.id, clientName: c.name, field: 'water' })
+    const weeklyKey = checkKeyStr({ weekId, trainerId: m.id, clientName: c.name, field: 'weekly' })
     return {
       name: c.name,
       win: c.win,
@@ -100,7 +145,9 @@ export function deriveMember(
   const totalClients = clients.length
   const checkedIn = clients.filter((c) => c.water && c.weekly).length
   const checkinRate = totalClients ? checkedIn / totalClients : 1
-  const flagged = m.status !== 'track'
+  const status = deriveStatus(showRate, checkinRate, sched, totalClients)
+  const s = statusMeta[status]
+  const flagged = status !== 'track'
 
   return {
     raw: m,
@@ -113,9 +160,9 @@ export function deriveMember(
     sessions: m.sessions,
     showRate,
     showRatePct: `${showRate}%`,
-    attendText: `${m.showed}/${m.sched}`,
+    attendText: `${m.showed}/${sched}`,
     trendColor: colorForRate(showRate),
-    points: m.points,
+    points: points ?? m.points,
 
     clients,
     checkedIn,
@@ -124,7 +171,7 @@ export function deriveMember(
     checkinColor: colorForCheckin(checkinRate),
     checkinRate,
 
-    status: m.status,
+    status,
     statusLabel: s.label,
     statusBg: s.bg,
     statusFg: s.fg,
@@ -137,17 +184,17 @@ export function deriveMember(
     cancelColor: m.cancels > 0 ? color.amber : color.ink,
 
     rowBg:
-      m.status === 'behind'
+      status === 'behind'
         ? color.rowBehindBg
-        : m.status === 'risk'
+        : status === 'risk'
           ? color.rowRiskBg
           : expanded
             ? color.surfaceMuted
             : color.surface,
     cardBorder:
-      m.status === 'behind'
+      status === 'behind'
         ? color.cardBehindBorder
-        : m.status === 'risk'
+        : status === 'risk'
           ? color.cardRiskBorder
           : color.borderSoft,
     note: m.note,
@@ -164,7 +211,7 @@ export interface WeekTotals {
 export function deriveTotals(members: DerivedMember[]): WeekTotals {
   const sessions = members.reduce((a, m) => a + m.sessions, 0)
   const showedSum = members.reduce((a, m) => a + m.raw.showed, 0)
-  const schedSum = members.reduce((a, m) => a + m.raw.sched, 0)
+  const schedSum = members.reduce((a, m) => a + m.raw.showed + m.noShows + m.cancels, 0)
   const noShows = members.reduce((a, m) => a + m.noShows + m.cancels, 0)
   const flagged = members.filter((m) => m.flagged).length
   return {
@@ -248,7 +295,7 @@ export function buildStatDrawer(
       case 'sessions':
         return `${m.sessions} sessions`
       case 'showrate':
-        return `${m.showRate}% · ${m.raw.showed}/${m.raw.sched}`
+        return `${m.showRate}% · ${m.attendText}`
       case 'noshows':
         return `${m.noShows + m.cancels} (${m.noShows} no-show, ${m.cancels} cancel)`
       case 'checkins':
@@ -308,14 +355,20 @@ export function buildStatDrawer(
   return { title: STAT_LABELS[id], total: totalText[id], totalColor: totalColor[id], rows }
 }
 
-/** Full derived view for a week, given current check overrides + expansion. */
+/**
+ * Full derived view for one week. Takes the whole `weeks` list so trend lines
+ * can be built from real history rather than stored placeholder points.
+ */
 export function deriveWeek(
-  week: Week,
+  weeks: Week[],
   weekIdx: number,
   checks: ChecksMap,
   expandedId: string | null,
 ) {
-  const members = week.members.map((m) => deriveMember(m, weekIdx, checks, expandedId === m.id))
+  const week = weeks[weekIdx]
+  const members = week.members.map((m) =>
+    deriveMember(m, week.id, checks, expandedId === m.id, sparklineFor(weeks, weekIdx, m.id)),
+  )
   const totals = deriveTotals(members)
   return { members, totals }
 }

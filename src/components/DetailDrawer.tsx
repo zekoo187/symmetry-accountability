@@ -19,7 +19,7 @@ export type DrawerState =
 export function DetailDrawer({
   drawer,
   week,
-  weekIdx,
+  weekId,
   members,
   totals,
   nudged,
@@ -29,7 +29,7 @@ export function DetailDrawer({
 }: {
   drawer: DrawerState
   week: Week
-  weekIdx: number
+  weekId: string
   members: DerivedMember[]
   totals: WeekTotals
   nudged: Record<string, boolean>
@@ -51,7 +51,7 @@ export function DetailDrawer({
     if (m) {
       title = m.name
       subtitle = `${m.role} · ${week.short}`
-      const isNudged = !!nudged[`${weekIdx}:${m.id}`]
+      const isNudged = !!nudged[`${weekId}:${m.id}`]
       body = (
         <>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>

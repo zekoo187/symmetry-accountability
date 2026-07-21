@@ -8,7 +8,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import type { ChecksMap, CurrentUser, NudgedMap, Week } from '../lib/types'
+import type { ChecksMap, CurrentUser, NudgedMap, Week, WeeklyStatsInput } from '../lib/types'
 import { checkKeyStr } from '../lib/types'
 import { isSupabaseConfigured } from '../lib/supabase'
 import type { DataAdapter } from './adapter'
@@ -25,16 +25,21 @@ interface DataContextValue {
   checks: ChecksMap
   nudged: NudgedMap
   toggleCheck: (
-    weekIdx: number,
+    weekId: string,
     trainerId: string,
     clientName: string,
     field: 'water' | 'weekly',
     nextValue: boolean,
   ) => void
-  sendReminder: (weekIdx: number, trainerId: string) => void
-  sendReminders: (weekIdx: number, trainerIds: string[]) => void
+  sendReminder: (weekId: string, trainerId: string) => void
+  sendReminders: (weekId: string, trainerIds: string[]) => void
   addClient: (trainerId: string, clientName: string) => Promise<void>
   removeClient: (trainerId: string, clientName: string) => Promise<void>
+  saveWeeklyStats: (
+    weekId: string,
+    trainerId: string,
+    input: WeeklyStatsInput,
+  ) => Promise<void>
 }
 
 const DataContext = createContext<DataContextValue | null>(null)
@@ -78,10 +83,10 @@ export function DataProvider({ user, children }: { user: CurrentUser; children: 
   }, [user])
 
   const toggleCheck = useCallback<DataContextValue['toggleCheck']>(
-    (weekIdx, trainerId, clientName, field, nextValue) => {
-      const key = checkKeyStr({ weekIdx, trainerId, clientName, field })
+    (weekId, trainerId, clientName, field, nextValue) => {
+      const key = checkKeyStr({ weekId, trainerId, clientName, field })
       setChecks((prev) => ({ ...prev, [key]: nextValue })) // optimistic
-      adapter.setCheck(user, weekIdx, trainerId, clientName, field, nextValue).catch((e) => {
+      adapter.setCheck(user, weekId, trainerId, clientName, field, nextValue).catch((e) => {
         if (mounted.current) setError(e instanceof Error ? e.message : 'Failed to save check-in')
       })
     },
@@ -89,9 +94,9 @@ export function DataProvider({ user, children }: { user: CurrentUser; children: 
   )
 
   const sendReminder = useCallback<DataContextValue['sendReminder']>(
-    (weekIdx, trainerId) => {
-      setNudged((prev) => ({ ...prev, [`${weekIdx}:${trainerId}`]: true })) // optimistic
-      adapter.sendReminder(user, weekIdx, trainerId).catch((e) => {
+    (weekId, trainerId) => {
+      setNudged((prev) => ({ ...prev, [`${weekId}:${trainerId}`]: true })) // optimistic
+      adapter.sendReminder(user, weekId, trainerId).catch((e) => {
         if (mounted.current) setError(e instanceof Error ? e.message : 'Failed to send reminder')
       })
     },
@@ -99,14 +104,14 @@ export function DataProvider({ user, children }: { user: CurrentUser; children: 
   )
 
   const sendReminders = useCallback<DataContextValue['sendReminders']>(
-    (weekIdx, trainerIds) => {
+    (weekId, trainerIds) => {
       setNudged((prev) => {
         const next = { ...prev }
-        for (const id of trainerIds) next[`${weekIdx}:${id}`] = true
+        for (const id of trainerIds) next[`${weekId}:${id}`] = true
         return next
       })
       trainerIds.forEach((id) =>
-        adapter.sendReminder(user, weekIdx, id).catch((e) => {
+        adapter.sendReminder(user, weekId, id).catch((e) => {
           if (mounted.current) setError(e instanceof Error ? e.message : 'Failed to send reminder')
         }),
       )
@@ -144,6 +149,18 @@ export function DataProvider({ user, children }: { user: CurrentUser; children: 
     [user, refreshWeeks],
   )
 
+  const saveWeeklyStats = useCallback<DataContextValue['saveWeeklyStats']>(
+    async (weekId, trainerId, input) => {
+      try {
+        await adapter.saveWeeklyStats(user, weekId, trainerId, input)
+        await refreshWeeks()
+      } catch (e) {
+        if (mounted.current) setError(e instanceof Error ? e.message : 'Failed to save your week')
+      }
+    },
+    [user, refreshWeeks],
+  )
+
   const value = useMemo<DataContextValue>(
     () => ({
       loading,
@@ -157,6 +174,7 @@ export function DataProvider({ user, children }: { user: CurrentUser; children: 
       sendReminders,
       addClient,
       removeClient,
+      saveWeeklyStats,
     }),
     [
       loading,
@@ -169,6 +187,7 @@ export function DataProvider({ user, children }: { user: CurrentUser; children: 
       sendReminders,
       addClient,
       removeClient,
+      saveWeeklyStats,
     ],
   )
 

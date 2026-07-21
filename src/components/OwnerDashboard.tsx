@@ -29,8 +29,8 @@ export function OwnerDashboard({ user }: { user: CurrentUser }) {
   const week = weeks[weekIdx]
 
   const { members, totals } = useMemo(
-    () => deriveWeek(week, weekIdx, checks, expandedId),
-    [week, weekIdx, checks, expandedId],
+    () => deriveWeek(weeks, weekIdx, checks, expandedId),
+    [weeks, weekIdx, checks, expandedId],
   )
 
   const canPrev = weekIdx < weeks.length - 1
@@ -49,7 +49,7 @@ export function OwnerDashboard({ user }: { user: CurrentUser }) {
 
   const flaggedIds = members.filter((m) => m.flagged).map((m) => m.id)
   const allFlaggedNudged =
-    flaggedIds.length > 0 && flaggedIds.every((id) => nudged[`${weekIdx}:${id}`])
+    flaggedIds.length > 0 && flaggedIds.every((id) => nudged[`${week.id}:${id}`])
   const nudgeAllLabel =
     totals.flagged === 0
       ? 'All on track 🎉'
@@ -68,7 +68,7 @@ export function OwnerDashboard({ user }: { user: CurrentUser }) {
     clientName: string,
     field: 'water' | 'weekly',
     next: boolean,
-  ) => toggleCheck(weekIdx, trainerId, clientName, field, next)
+  ) => toggleCheck(week.id, trainerId, clientName, field, next)
 
   return (
     <>
@@ -77,7 +77,7 @@ export function OwnerDashboard({ user }: { user: CurrentUser }) {
           week={week}
           members={members}
           totals={totals}
-          weekIdx={weekIdx}
+          weekId={week.id}
           expandedId={expandedId}
           nudged={nudged}
           canPrev={canPrev}
@@ -87,7 +87,7 @@ export function OwnerDashboard({ user }: { user: CurrentUser }) {
           onToggleExpand={(id) => setExpandedId((cur) => (cur === id ? null : id))}
           onOpenWin={(i) => setDrawer({ kind: 'win', id: i })}
           onToggleCheck={handleToggleCheck}
-          onNudge={(id) => sendReminder(weekIdx, id)}
+          onNudge={(id) => sendReminder(week.id, id)}
           onSignOut={signOut}
         />
       ) : (
@@ -104,7 +104,7 @@ export function OwnerDashboard({ user }: { user: CurrentUser }) {
           onNextWeek={nextWeek}
           onNav={onNav}
           onOpenDrawer={setDrawer}
-          onNudgeAll={() => sendReminders(weekIdx, flaggedIds)}
+          onNudgeAll={() => sendReminders(week.id, flaggedIds)}
           onSignOut={signOut}
         />
       )}
@@ -113,7 +113,7 @@ export function OwnerDashboard({ user }: { user: CurrentUser }) {
         <DetailDrawer
           drawer={drawer}
           week={week}
-          weekIdx={weekIdx}
+          weekId={week.id}
           members={members}
           totals={totals}
           nudged={nudged}
@@ -122,7 +122,7 @@ export function OwnerDashboard({ user }: { user: CurrentUser }) {
             setActiveNav('Overview')
           }}
           onToggleCheck={handleToggleCheck}
-          onNudge={(id) => sendReminder(weekIdx, id)}
+          onNudge={(id) => sendReminder(week.id, id)}
         />
       )}
     </>

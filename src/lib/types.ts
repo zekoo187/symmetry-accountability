@@ -39,22 +39,34 @@ export interface Win {
 }
 
 export interface Week {
+  /** Stable identifier (DB uuid). Positions shift as weeks roll, ids don't. */
+  id: string
   label: string // 'Week of Jul 6 – Jul 12'
   short: string // 'Jul 6–12'
+  startDate: string // ISO date of the Monday
   wins: Win[]
   members: WeeklyMember[]
 }
 
+/** The four numbers a trainer reports for their week. */
+export interface WeeklyStatsInput {
+  sessions: number // sessions actually delivered
+  noShows: number
+  cancels: number
+  nextWeek: number // sessions booked for next week
+  note: string
+}
+
 /** Key identifying a single togglable check-in cell. */
 export interface CheckKey {
-  weekIdx: number
+  weekId: string
   trainerId: string
   clientName: string
   field: 'water' | 'weekly'
 }
 
 export function checkKeyStr(k: CheckKey): string {
-  return `${k.weekIdx}:${k.trainerId}:${k.clientName}:${k.field}`
+  return `${k.weekId}:${k.trainerId}:${k.clientName}:${k.field}`
 }
 
 export type ChecksMap = Record<string, boolean>

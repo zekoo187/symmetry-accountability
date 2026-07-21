@@ -214,6 +214,12 @@ export function DesktopDashboard(props: {
                 >
                   🏆 Small wins this week
                 </div>
+                {week.wins.length === 0 && (
+                  <div style={{ fontSize: 13.5, lineHeight: 1.5, opacity: 0.85 }}>
+                    Nothing logged yet this week. Wins show up here as trainers record client
+                    milestones.
+                  </div>
+                )}
                 <div
                   style={{
                     display: 'grid',

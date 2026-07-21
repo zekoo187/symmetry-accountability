@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { color, font, shadow } from '../lib/tokens'
 import type { CurrentUser } from '../lib/types'
-import { deriveMember } from '../lib/derive'
+import { colorForRate, deriveMember } from '../lib/derive'
 import { useData } from '../data/DataContext'
 import { useAuth } from '../auth/AuthContext'
 import { Avatar, Meter, SectionLabel, StatusPill } from './primitives'
@@ -9,7 +9,7 @@ import { WeekStepper } from './WeekStepper'
 import { ClientCheckinRow } from './ClientCheckinRow'
 
 export function TrainerView({ user }: { user: CurrentUser }) {
-  const { weeks, checks, toggleCheck, addClient, removeClient } = useData()
+  const { weeks, checks, toggleCheck, addClient, removeClient, saveWeeklyStats } = useData()
   const { signOut } = useAuth()
   const [weekIdx, setWeekIdx] = useState(0)
   const [newClient, setNewClient] = useState('')
@@ -19,12 +19,47 @@ export function TrainerView({ user }: { user: CurrentUser }) {
   const rawMember = week?.members.find((m) => m.id === user.trainerId) ?? week?.members[0]
 
   const m = useMemo(
-    () => (rawMember ? deriveMember(rawMember, weekIdx, checks, true) : null),
-    [rawMember, weekIdx, checks],
+    () => (rawMember ? deriveMember(rawMember, week.id, checks, true) : null),
+    [rawMember, week, checks],
   )
 
   const canPrev = weekIdx < weeks.length - 1
   const canNext = weekIdx > 0
+
+  // --- "report your week" form -------------------------------------------------
+  const [form, setForm] = useState({
+    sessions: '0',
+    noShows: '0',
+    cancels: '0',
+    nextWeek: '0',
+    note: '',
+  })
+  const [saving, setSaving] = useState(false)
+  const [savedTick, setSavedTick] = useState(false)
+
+  // Reload the form whenever the selected week (or trainer) changes.
+  useEffect(() => {
+    if (!m) return
+    setForm({
+      sessions: String(m.sessions),
+      noShows: String(m.noShows),
+      cancels: String(m.cancels),
+      nextWeek: String(m.nextWeek),
+      note: m.note ?? '',
+    })
+    setSavedTick(false)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [week?.id, m?.id])
+
+  const num = (v: string) => {
+    const n = parseInt(v, 10)
+    return Number.isFinite(n) && n > 0 ? n : 0
+  }
+  const fSessions = num(form.sessions)
+  const fNoShows = num(form.noShows)
+  const fCancels = num(form.cancels)
+  const fScheduled = fSessions + fNoShows + fCancels
+  const fShowRate = fScheduled > 0 ? Math.round((fSessions / fScheduled) * 100) : 0
 
   if (!m) {
     return (
@@ -67,6 +102,133 @@ export function TrainerView({ user }: { user: CurrentUser }) {
         </div>
       </div>
 
+      {/* report your week */}
+      <div style={{ padding: '20px 18px 0' }}>
+        <SectionLabel style={{ marginBottom: 10 }}>Report your week</SectionLabel>
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault()
+            if (saving) return
+            setSaving(true)
+            await saveWeeklyStats(week.id, m.id, {
+              sessions: fSessions,
+              noShows: fNoShows,
+              cancels: fCancels,
+              nextWeek: num(form.nextWeek),
+              note: form.note.trim(),
+            })
+            setSaving(false)
+            setSavedTick(true)
+          }}
+          style={{
+            border: `1px solid ${color.borderSoft}`,
+            borderRadius: 12,
+            padding: '14px 14px 16px',
+            background: color.surfaceMuted,
+          }}
+        >
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <NumField
+              label="Sessions delivered"
+              value={form.sessions}
+              onChange={(v) => {
+                setForm((f) => ({ ...f, sessions: v }))
+                setSavedTick(false)
+              }}
+            />
+            <NumField
+              label="Booked next week"
+              value={form.nextWeek}
+              onChange={(v) => {
+                setForm((f) => ({ ...f, nextWeek: v }))
+                setSavedTick(false)
+              }}
+            />
+            <NumField
+              label="No-shows"
+              value={form.noShows}
+              onChange={(v) => {
+                setForm((f) => ({ ...f, noShows: v }))
+                setSavedTick(false)
+              }}
+            />
+            <NumField
+              label="Cancellations"
+              value={form.cancels}
+              onChange={(v) => {
+                setForm((f) => ({ ...f, cancels: v }))
+                setSavedTick(false)
+              }}
+            />
+          </div>
+
+          {/* live preview of what these numbers produce */}
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginTop: 12,
+              padding: '9px 11px',
+              background: '#fff',
+              border: `1px solid ${color.borderSoft}`,
+              borderRadius: 9,
+              fontSize: 12.5,
+              color: color.text2,
+            }}
+          >
+            <span>
+              Scheduled <b style={{ color: color.ink }}>{fScheduled}</b>
+            </span>
+            <span>
+              Show rate{' '}
+              <b style={{ color: colorForRate(fShowRate) }}>{fScheduled > 0 ? `${fShowRate}%` : '—'}</b>
+            </span>
+          </div>
+
+          <textarea
+            value={form.note}
+            onChange={(e) => {
+              setForm((f) => ({ ...f, note: e.target.value }))
+              setSavedTick(false)
+            }}
+            placeholder="Anything worth flagging this week? (optional)"
+            rows={2}
+            style={{
+              width: '100%',
+              marginTop: 10,
+              padding: '9px 11px',
+              borderRadius: 9,
+              border: `1px solid ${color.border}`,
+              fontSize: 13,
+              fontFamily: font.body,
+              resize: 'vertical',
+              background: '#fff',
+            }}
+          />
+
+          <button
+            type="submit"
+            disabled={saving}
+            style={{
+              marginTop: 10,
+              width: '100%',
+              padding: '11px 16px',
+              borderRadius: 9,
+              border: `1px solid ${savedTick ? color.greenTintBorder : color.ink}`,
+              background: savedTick ? color.greenTintBg : color.ink,
+              color: savedTick ? color.green : '#fff',
+              fontSize: 13.5,
+              fontWeight: 600,
+              cursor: saving ? 'default' : 'pointer',
+              opacity: saving ? 0.7 : 1,
+            }}
+          >
+            {saving ? 'Saving…' : savedTick ? '✓ Week saved' : 'Save my week'}
+          </button>
+        </form>
+      </div>
+
       <div style={{ padding: '18px 18px 0' }}>
         <div
           style={{
@@ -91,7 +253,7 @@ export function TrainerView({ user }: { user: CurrentUser }) {
               client={c}
               bg="#fff"
               showWin
-              onToggle={(field, next) => toggleCheck(weekIdx, m.id, c.name, field, next)}
+              onToggle={(field, next) => toggleCheck(week.id, m.id, c.name, field, next)}
               onRemove={() => {
                 if (confirm(`Remove ${c.name} from your client list?`)) {
                   void removeClient(m.id, c.name)
@@ -251,6 +413,42 @@ function Shell({ children, onSignOut }: { children: React.ReactNode; onSignOut: 
         {children}
       </div>
     </div>
+  )
+}
+
+function NumField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string
+  value: string
+  onChange: (v: string) => void
+}) {
+  return (
+    <label style={{ display: 'block' }}>
+      <span style={{ display: 'block', fontSize: 11.5, color: color.muted, marginBottom: 4 }}>
+        {label}
+      </span>
+      <input
+        type="number"
+        inputMode="numeric"
+        min={0}
+        value={value}
+        onFocus={(e) => e.currentTarget.select()}
+        onChange={(e) => onChange(e.target.value)}
+        style={{
+          width: '100%',
+          padding: '9px 11px',
+          borderRadius: 9,
+          border: `1px solid ${color.border}`,
+          fontSize: 15,
+          fontFamily: font.display,
+          fontWeight: 700,
+          background: '#fff',
+        }}
+      />
+    </label>
   )
 }
 

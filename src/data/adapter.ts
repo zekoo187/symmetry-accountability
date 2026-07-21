@@ -1,4 +1,4 @@
-import type { ChecksMap, CurrentUser, NudgedMap, Week } from '../lib/types'
+import type { ChecksMap, CurrentUser, NudgedMap, Week, WeeklyStatsInput } from '../lib/types'
 
 /**
  * The persistence boundary. Two implementations:
@@ -15,13 +15,13 @@ export interface DataAdapter {
   /** Check-in overrides layered on top of loadWeeks (mock only; supabase returns {}). */
   loadChecks(user: CurrentUser): Promise<ChecksMap>
 
-  /** Which `${weekIdx}:${trainerId}` reminders have already gone out. */
+  /** Which `${weekId}:${trainerId}` reminders have already gone out. */
   loadNudged(user: CurrentUser): Promise<NudgedMap>
 
   /** Persist a single check-in cell toggle. */
   setCheck(
     user: CurrentUser,
-    weekIdx: number,
+    weekId: string,
     trainerId: string,
     clientName: string,
     field: 'water' | 'weekly',
@@ -29,7 +29,15 @@ export interface DataAdapter {
   ): Promise<void>
 
   /** Record + (in production) actually send a reminder to one trainer. */
-  sendReminder(user: CurrentUser, weekIdx: number, trainerId: string): Promise<void>
+  sendReminder(user: CurrentUser, weekId: string, trainerId: string): Promise<void>
+
+  /** Save the numbers a trainer reports for their week. */
+  saveWeeklyStats(
+    user: CurrentUser,
+    weekId: string,
+    trainerId: string,
+    input: WeeklyStatsInput,
+  ): Promise<void>
 
   /** Add a client to a trainer's roster. Names are unique per trainer. */
   addClient(user: CurrentUser, trainerId: string, clientName: string): Promise<void>

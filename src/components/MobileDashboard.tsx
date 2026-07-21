@@ -10,7 +10,7 @@ export function MobileDashboard(props: {
   week: Week
   members: DerivedMember[]
   totals: WeekTotals
-  weekIdx: number
+  weekId: string
   expandedId: string | null
   nudged: Record<string, boolean>
   canPrev: boolean
@@ -27,7 +27,7 @@ export function MobileDashboard(props: {
     week,
     members,
     totals,
-    weekIdx,
+    weekId,
     expandedId,
     nudged,
     canPrev,
@@ -41,7 +41,7 @@ export function MobileDashboard(props: {
     onSignOut,
   } = props
 
-  void weekIdx // key info already reflected in derived members
+
 
   return (
     <div style={{ minHeight: '100vh', background: color.appBg, fontFamily: font.body }}>
@@ -105,6 +105,11 @@ export function MobileDashboard(props: {
           >
             🏆 Small wins this week
           </div>
+          {week.wins.length === 0 && (
+            <div style={{ fontSize: 12.5, lineHeight: 1.45, opacity: 0.85 }}>
+              Nothing logged yet this week.
+            </div>
+          )}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {week.wins.map((w, i) => (
               <div
@@ -147,7 +152,7 @@ export function MobileDashboard(props: {
         >
           {members.map((m) => {
             const expanded = expandedId === m.id
-            const isNudged = !!nudged[`${weekIdx}:${m.id}`]
+            const isNudged = !!nudged[`${weekId}:${m.id}`]
             return (
               <div
                 key={m.id}

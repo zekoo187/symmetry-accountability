@@ -1,4 +1,4 @@
-import type { ChecksMap, CurrentUser, NudgedMap, Week } from '../lib/types'
+import type { ChecksMap, CurrentUser, NudgedMap, Week, WeeklyStatsInput } from '../lib/types'
 import { checkKeyStr } from '../lib/types'
 import { WEEKS } from './seed'
 import type { DataAdapter } from './adapter'
@@ -7,6 +7,7 @@ const CHECKS_KEY = 'sf_checks'
 const NUDGED_KEY = 'sf_nudged'
 const ADDED_KEY = 'sf_added_clients' // { [trainerId]: string[] }
 const REMOVED_KEY = 'sf_removed_clients' // { [trainerId]: string[] }
+const STATS_KEY = 'sf_weekly_stats' // { [`${weekId}:${trainerId}`]: WeeklyStatsInput }
 
 function read<T>(key: string, fallback: T): T {
   try {
@@ -34,6 +35,7 @@ type NameListMap = Record<string, string[]>
 function cloneWeeks(): Week[] {
   const added = read<NameListMap>(ADDED_KEY, {})
   const removed = read<NameListMap>(REMOVED_KEY, {})
+  const stats = read<Record<string, WeeklyStatsInput>>(STATS_KEY, {})
   return WEEKS.map((w) => ({
     ...w,
     wins: w.wins.map((x) => ({ ...x })),
@@ -43,7 +45,20 @@ function cloneWeeks(): Week[] {
       const extra = (added[m.id] ?? [])
         .filter((n) => !gone.has(n) && !kept.some((c) => c.name === n))
         .map((n) => ({ name: n, water: false, weekly: false, win: '' }))
-      return { ...m, clients: [...kept, ...extra].sort((a, b) => a.name.localeCompare(b.name)) }
+      const clients = [...kept, ...extra].sort((a, b) => a.name.localeCompare(b.name))
+      const s = stats[`${w.id}:${m.id}`]
+      if (!s) return { ...m, clients }
+      return {
+        ...m,
+        clients,
+        sessions: s.sessions,
+        showed: s.sessions,
+        noShows: s.noShows,
+        cancels: s.cancels,
+        sched: s.sessions + s.noShows + s.cancels,
+        nextWeek: s.nextWeek,
+        note: s.note,
+      }
     }),
   }))
 }
@@ -71,16 +86,22 @@ export const mockAdapter: DataAdapter = {
     return read<NudgedMap>(NUDGED_KEY, {})
   },
 
-  async setCheck(_user, weekIdx, trainerId, clientName, field, value): Promise<void> {
+  async setCheck(_user, weekId, trainerId, clientName, field, value): Promise<void> {
     const checks = read<ChecksMap>(CHECKS_KEY, {})
-    checks[checkKeyStr({ weekIdx, trainerId, clientName, field })] = value
+    checks[checkKeyStr({ weekId, trainerId, clientName, field })] = value
     write(CHECKS_KEY, checks)
   },
 
-  async sendReminder(_user, weekIdx, trainerId): Promise<void> {
+  async sendReminder(_user, weekId, trainerId): Promise<void> {
     const nudged = read<NudgedMap>(NUDGED_KEY, {})
-    nudged[`${weekIdx}:${trainerId}`] = true
+    nudged[`${weekId}:${trainerId}`] = true
     write(NUDGED_KEY, nudged)
+  },
+
+  async saveWeeklyStats(_user, weekId, trainerId, input): Promise<void> {
+    const stats = read<Record<string, WeeklyStatsInput>>(STATS_KEY, {})
+    stats[`${weekId}:${trainerId}`] = input
+    write(STATS_KEY, stats)
   },
 
   async addClient(_user, trainerId, clientName): Promise<void> {
