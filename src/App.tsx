@@ -4,6 +4,7 @@ import { LoginScreen } from './auth/LoginScreen'
 import { DataProvider, useData } from './data/DataContext'
 import { OwnerDashboard } from './components/OwnerDashboard'
 import { TrainerView } from './components/TrainerView'
+import { AccountProvider } from './account/AccountModal'
 import type { CurrentUser } from './lib/types'
 
 function Centered({ children }: { children: React.ReactNode }) {
@@ -65,10 +66,10 @@ function AuthedApp({ user }: { user: CurrentUser }) {
       </Centered>
     )
   return (
-    <>
+    <AccountProvider>
       {user.role === 'owner' ? <OwnerDashboard user={user} /> : <TrainerView user={user} />}
       <DemoBadge />
-    </>
+    </AccountProvider>
   )
 }
 

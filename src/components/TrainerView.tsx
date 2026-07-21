@@ -7,6 +7,7 @@ import { useAuth } from '../auth/AuthContext'
 import { Avatar, Meter, SectionLabel, StatusPill } from './primitives'
 import { WeekStepper } from './WeekStepper'
 import { ClientCheckinRow } from './ClientCheckinRow'
+import { ChangePasswordLink } from '../account/AccountModal'
 
 export function TrainerView({ user }: { user: CurrentUser }) {
   const { weeks, checks, toggleCheck, addClient, removeClient, saveWeeklyStats } = useData()
@@ -396,19 +397,22 @@ function Shell({ children, onSignOut }: { children: React.ReactNode; onSignOut: 
               Symmetry Fitness
             </span>
           </div>
-          <button
-            onClick={onSignOut}
-            style={{
-              border: 'none',
-              background: 'transparent',
-              color: color.muted,
-              cursor: 'pointer',
-              fontSize: 12.5,
-              fontWeight: 600,
-            }}
-          >
-            Sign out
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <ChangePasswordLink />
+            <button
+              onClick={onSignOut}
+              style={{
+                border: 'none',
+                background: 'transparent',
+                color: color.muted,
+                cursor: 'pointer',
+                fontSize: 12.5,
+                fontWeight: 600,
+              }}
+            >
+              Sign out
+            </button>
+          </div>
         </div>
         {children}
       </div>

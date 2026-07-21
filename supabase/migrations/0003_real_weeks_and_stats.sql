@@ -7,6 +7,10 @@
 -- =============================================================================
 
 -- ---- 1. trainers may report their own week ---------------------------------
+-- Dropped first so this file is safe to re-run.
+drop policy if exists weekly_stats_insert on weekly_stats;
+drop policy if exists weekly_stats_update on weekly_stats;
+
 create policy weekly_stats_insert on weekly_stats for insert to authenticated
   with check (is_owner() or trainer_id = auth_trainer_id());
 
@@ -38,8 +42,7 @@ from (
     date_trunc('week', now() + interval '3 years'),
     interval '1 week'
   ) as d
-) as wk
-on conflict (idx) do nothing;
+) as wk;
 
 -- ---- 3. no fabricated numbers ----------------------------------------------
 -- weekly_stats and wins referenced the deleted sample weeks, so they're already

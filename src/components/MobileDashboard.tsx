@@ -5,6 +5,7 @@ import { Avatar, Meter, SectionLabel, StatusPill } from './primitives'
 import { WeekStepper } from './WeekStepper'
 import { ClientCheckinRow } from './ClientCheckinRow'
 import { NudgeButton } from './NudgeButton'
+import { ChangePasswordLink } from '../account/AccountModal'
 
 export function MobileDashboard(props: {
   week: Week
@@ -63,13 +64,16 @@ export function MobileDashboard(props: {
               </div>
               <div style={{ fontSize: 12, color: color.muted }}>{members.length} trainers</div>
             </div>
-            <button
-              onClick={onSignOut}
-              aria-label="Sign out"
-              style={{ border: 'none', background: 'transparent', padding: 0, cursor: 'pointer' }}
-            >
-              <Avatar initials="SF" bg={color.owner} size={34} fontSize={12} />
-            </button>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+              <button
+                onClick={onSignOut}
+                aria-label="Sign out"
+                style={{ border: 'none', background: 'transparent', padding: 0, cursor: 'pointer' }}
+              >
+                <Avatar initials="SF" bg={color.owner} size={34} fontSize={12} />
+              </button>
+              <ChangePasswordLink style={{ fontSize: 11 }} />
+            </div>
           </div>
           <div style={{ marginTop: 12 }}>
             <WeekStepper

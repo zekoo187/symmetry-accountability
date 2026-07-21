@@ -21,6 +21,8 @@ interface AuthContextValue {
   /** Mock sign-in used when Supabase isn't configured. */
   mockSignIn: (user: CurrentUser) => void
   signOut: () => Promise<void>
+  /** Change the signed-in user's password. Returns an error message or null. */
+  changePassword: (newPassword: string) => Promise<string | null>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -102,6 +104,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(u)
   }, [])
 
+  const changePassword = useCallback<AuthContextValue['changePassword']>(async (newPassword) => {
+    if (!isSupabaseConfigured || !supabase) return 'Password changes need the live app.'
+    const { error } = await supabase.auth.updateUser({ password: newPassword })
+    return error ? error.message : null
+  }, [])
+
   const signOut = useCallback<AuthContextValue['signOut']>(async () => {
     if (isSupabaseConfigured && supabase) {
       await supabase.auth.signOut()
@@ -116,8 +124,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const value = useMemo<AuthContextValue>(
-    () => ({ ready, user, configured: isSupabaseConfigured, signIn, mockSignIn, signOut }),
-    [ready, user, signIn, mockSignIn, signOut],
+    () => ({
+      ready,
+      user,
+      configured: isSupabaseConfigured,
+      signIn,
+      mockSignIn,
+      signOut,
+      changePassword,
+    }),
+    [ready, user, signIn, mockSignIn, signOut, changePassword],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

@@ -4,6 +4,7 @@ import type { DerivedMember, WeekTotals } from '../lib/derive'
 import type { DrawerState } from './DetailDrawer'
 import { Avatar, Sparkline, StatusPill } from './primitives'
 import { WeekStepper } from './WeekStepper'
+import { ChangePasswordLink } from '../account/AccountModal'
 
 const NAV_ITEMS = ['Overview', 'Trainers', 'Check-ins', 'Sessions', 'Wins'] as const
 
@@ -115,33 +116,35 @@ export function DesktopDashboard(props: {
                 })}
               </nav>
 
-              <div
-                style={{
-                  marginTop: 'auto',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 9,
-                  fontSize: 13,
-                  color: color.text3,
-                }}
-              >
-                <Avatar initials="SF" bg={color.owner} size={28} fontSize={12} />
-                {ownerName}
-                <span style={{ fontSize: 11, color: color.faint }}>· owner</span>
-                <button
-                  onClick={onSignOut}
-                  title="Sign out"
+              <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div
                   style={{
-                    marginLeft: 'auto',
-                    border: 'none',
-                    background: 'transparent',
-                    color: color.faint,
-                    cursor: 'pointer',
-                    fontSize: 12,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 9,
+                    fontSize: 13,
+                    color: color.text3,
                   }}
                 >
-                  ⎋
-                </button>
+                  <Avatar initials="SF" bg={color.owner} size={28} fontSize={12} />
+                  {ownerName}
+                  <span style={{ fontSize: 11, color: color.faint }}>· owner</span>
+                  <button
+                    onClick={onSignOut}
+                    title="Sign out"
+                    style={{
+                      marginLeft: 'auto',
+                      border: 'none',
+                      background: 'transparent',
+                      color: color.faint,
+                      cursor: 'pointer',
+                      fontSize: 12,
+                    }}
+                  >
+                    ⎋
+                  </button>
+                </div>
+                <ChangePasswordLink style={{ fontSize: 11.5, fontWeight: 500 }} />
               </div>
             </div>
 
