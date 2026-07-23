@@ -44,4 +44,13 @@ export interface DataAdapter {
 
   /** Remove a client (and their check-in history) from a trainer's roster. */
   removeClient(user: CurrentUser, trainerId: string, clientName: string): Promise<void>
+
+  /** Set (or clear, with '') a celebrated win for a client this week. */
+  setClientWin(
+    user: CurrentUser,
+    weekId: string,
+    trainerId: string,
+    clientName: string,
+    winText: string,
+  ): Promise<void>
 }

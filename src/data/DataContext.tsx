@@ -40,6 +40,12 @@ interface DataContextValue {
     trainerId: string,
     input: WeeklyStatsInput,
   ) => Promise<void>
+  setClientWin: (
+    weekId: string,
+    trainerId: string,
+    clientName: string,
+    winText: string,
+  ) => Promise<void>
 }
 
 const DataContext = createContext<DataContextValue | null>(null)
@@ -161,6 +167,18 @@ export function DataProvider({ user, children }: { user: CurrentUser; children: 
     [user, refreshWeeks],
   )
 
+  const setClientWin = useCallback<DataContextValue['setClientWin']>(
+    async (weekId, trainerId, clientName, winText) => {
+      try {
+        await adapter.setClientWin(user, weekId, trainerId, clientName, winText)
+        await refreshWeeks()
+      } catch (e) {
+        if (mounted.current) setError(e instanceof Error ? e.message : 'Failed to save win')
+      }
+    },
+    [user, refreshWeeks],
+  )
+
   const value = useMemo<DataContextValue>(
     () => ({
       loading,
@@ -175,6 +193,7 @@ export function DataProvider({ user, children }: { user: CurrentUser; children: 
       addClient,
       removeClient,
       saveWeeklyStats,
+      setClientWin,
     }),
     [
       loading,
@@ -188,6 +207,7 @@ export function DataProvider({ user, children }: { user: CurrentUser; children: 
       addClient,
       removeClient,
       saveWeeklyStats,
+      setClientWin,
     ],
   )
 

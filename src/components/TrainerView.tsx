@@ -10,7 +10,8 @@ import { ClientCheckinRow } from './ClientCheckinRow'
 import { ChangePasswordLink } from '../account/AccountModal'
 
 export function TrainerView({ user }: { user: CurrentUser }) {
-  const { weeks, checks, toggleCheck, addClient, removeClient, saveWeeklyStats } = useData()
+  const { weeks, checks, toggleCheck, addClient, removeClient, saveWeeklyStats, setClientWin } =
+    useData()
   const { signOut } = useAuth()
   const [weekIdx, setWeekIdx] = useState(0)
   const [newClient, setNewClient] = useState('')
@@ -255,6 +256,13 @@ export function TrainerView({ user }: { user: CurrentUser }) {
               bg="#fff"
               showWin
               onToggle={(field, next) => toggleCheck(week.id, m.id, c.name, field, next)}
+              onSetWin={() => {
+                const next = window.prompt(
+                  `Win for ${c.name} this week? (e.g. "−4 lb", "first pull-up"). Leave blank to clear.`,
+                  c.win,
+                )
+                if (next !== null) void setClientWin(week.id, m.id, c.name, next)
+              }}
               onRemove={() => {
                 if (confirm(`Remove ${c.name} from your client list?`)) {
                   void removeClient(m.id, c.name)

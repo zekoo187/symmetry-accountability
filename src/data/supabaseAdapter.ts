@@ -67,12 +67,6 @@ interface CheckinRow {
   weighin_done: boolean
   win_text: string | null
 }
-interface WinRow {
-  week_id: string
-  position: number
-  stat: string
-  text: string
-}
 interface NudgeRow {
   trainer_id: string
   week_id: string
@@ -102,14 +96,13 @@ export const supabaseAdapter: DataAdapter = {
     const weekIds = weeks.map((w) => w.id)
 
     // RLS scopes each of these to what the signed-in user may read.
-    const [trainersRes, clientsRes, statsRes, checkinsRes, winsRes] = await Promise.all([
+    const [trainersRes, clientsRes, statsRes, checkinsRes] = await Promise.all([
       sb.from('trainers').select('*'),
       sb.from('clients').select('*'),
       sb.from('weekly_stats').select('*').in('week_id', weekIds),
       sb.from('checkins').select('*').in('week_id', weekIds),
-      sb.from('wins').select('*').in('week_id', weekIds).order('position', { ascending: true }),
     ])
-    for (const r of [trainersRes, clientsRes, statsRes, checkinsRes, winsRes]) {
+    for (const r of [trainersRes, clientsRes, statsRes, checkinsRes]) {
       if (r.error) throw r.error
     }
 
@@ -117,7 +110,6 @@ export const supabaseAdapter: DataAdapter = {
     const clients = (clientsRes.data ?? []) as ClientRow[]
     const stats = (statsRes.data ?? []) as StatRow[]
     const checkins = (checkinsRes.data ?? []) as CheckinRow[]
-    const wins = (winsRes.data ?? []) as WinRow[]
 
     // A trainer only sees themselves (RLS already filtered), the owner sees all.
     const visibleTrainers = trainers.slice().sort((a, b) => orderOf(a.id) - orderOf(b.id))
@@ -164,12 +156,20 @@ export const supabaseAdapter: DataAdapter = {
         }
       })
 
+      // Wins hero is built from the wins trainers logged on their clients this
+      // week, newest-feeling first (owner sees all; a trainer sees their own).
+      const winCards = members.flatMap((m) =>
+        m.clients
+          .filter((c) => c.win)
+          .map((c) => ({ stat: c.win, text: `${m.name.split(' ')[0]}’s client ${c.name}` })),
+      )
+
       return {
         id: wk.id,
         label: wk.label,
         short: wk.short_label,
         startDate: wk.start_date,
-        wins: wins.filter((w) => w.week_id === wk.id).map((w) => ({ stat: w.stat, text: w.text })),
+        wins: winCards,
         members,
       }
     })
@@ -239,6 +239,23 @@ export const supabaseAdapter: DataAdapter = {
       .delete()
       .eq('trainer_id', trainerId)
       .eq('name', clientName)
+    if (error) throw error
+  },
+
+  async setClientWin(_user, weekId, trainerId, clientName, winText): Promise<void> {
+    const sb = db()
+    const { data: cl, error: clErr } = await sb
+      .from('clients')
+      .select('id')
+      .eq('trainer_id', trainerId)
+      .eq('name', clientName)
+      .single()
+    if (clErr) throw clErr
+    const text = winText.trim()
+    const { error } = await sb.from('checkins').upsert(
+      { client_id: (cl as { id: string }).id, week_id: weekId, win_text: text || null },
+      { onConflict: 'client_id,week_id' },
+    )
     if (error) throw error
   },
 

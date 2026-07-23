@@ -8,6 +8,7 @@ const NUDGED_KEY = 'sf_nudged'
 const ADDED_KEY = 'sf_added_clients' // { [trainerId]: string[] }
 const REMOVED_KEY = 'sf_removed_clients' // { [trainerId]: string[] }
 const STATS_KEY = 'sf_weekly_stats' // { [`${weekId}:${trainerId}`]: WeeklyStatsInput }
+const WINS_KEY = 'sf_client_wins' // { [`${weekId}:${trainerId}:${clientName}`]: string }
 
 function read<T>(key: string, fallback: T): T {
   try {
@@ -36,16 +37,20 @@ function cloneWeeks(): Week[] {
   const added = read<NameListMap>(ADDED_KEY, {})
   const removed = read<NameListMap>(REMOVED_KEY, {})
   const stats = read<Record<string, WeeklyStatsInput>>(STATS_KEY, {})
-  return WEEKS.map((w) => ({
-    ...w,
-    wins: w.wins.map((x) => ({ ...x })),
-    members: w.members.map((m) => {
+  const winOverrides = read<Record<string, string>>(WINS_KEY, {})
+  return WEEKS.map((w) => {
+    const members = w.members.map((m) => {
       const gone = new Set(removed[m.id] ?? [])
       const kept = m.clients.filter((c) => !gone.has(c.name)).map((c) => ({ ...c }))
       const extra = (added[m.id] ?? [])
         .filter((n) => !gone.has(n) && !kept.some((c) => c.name === n))
         .map((n) => ({ name: n, water: false, weekly: false, win: '' }))
-      const clients = [...kept, ...extra].sort((a, b) => a.name.localeCompare(b.name))
+      const clients = [...kept, ...extra]
+        .map((c) => {
+          const key = `${w.id}:${m.id}:${c.name}`
+          return key in winOverrides ? { ...c, win: winOverrides[key] } : c
+        })
+        .sort((a, b) => a.name.localeCompare(b.name))
       const s = stats[`${w.id}:${m.id}`]
       if (!s) return { ...m, clients }
       return {
@@ -59,8 +64,14 @@ function cloneWeeks(): Week[] {
         nextWeek: s.nextWeek,
         note: s.note,
       }
-    }),
-  }))
+    })
+    const wins = members.flatMap((m) =>
+      m.clients
+        .filter((c) => c.win)
+        .map((c) => ({ stat: c.win, text: `${m.name.split(' ')[0]}’s client ${c.name}` })),
+    )
+    return { ...w, wins, members }
+  })
 }
 
 export const mockAdapter: DataAdapter = {
@@ -102,6 +113,12 @@ export const mockAdapter: DataAdapter = {
     const stats = read<Record<string, WeeklyStatsInput>>(STATS_KEY, {})
     stats[`${weekId}:${trainerId}`] = input
     write(STATS_KEY, stats)
+  },
+
+  async setClientWin(_user, weekId, trainerId, clientName, winText): Promise<void> {
+    const wins = read<Record<string, string>>(WINS_KEY, {})
+    wins[`${weekId}:${trainerId}:${clientName}`] = winText.trim()
+    write(WINS_KEY, wins)
   },
 
   async addClient(_user, trainerId, clientName): Promise<void> {

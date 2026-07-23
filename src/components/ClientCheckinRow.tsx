@@ -6,6 +6,7 @@ export function ClientCheckinRow({
   client,
   onToggle,
   onRemove,
+  onSetWin,
   bg = '#fff',
   showWin = false,
   compact = false,
@@ -14,6 +15,8 @@ export function ClientCheckinRow({
   onToggle: (field: 'water' | 'weekly', next: boolean) => void
   /** When provided, shows a small remove (×) control for this client. */
   onRemove?: () => void
+  /** When provided, shows a control to add/edit this client's win. */
+  onSetWin?: () => void
   bg?: string
   showWin?: boolean
   compact?: boolean
@@ -50,7 +53,7 @@ export function ClientCheckinRow({
         fontSize={compact ? 10.5 : 11.5}
         padding={compact ? '2px 7px' : '3px 9px'}
       />
-      {showWin && client.win && (
+      {showWin && client.win && !onSetWin && (
         <span
           style={{
             padding: '3px 9px',
@@ -63,6 +66,26 @@ export function ClientCheckinRow({
         >
           🏆 {client.win}
         </span>
+      )}
+      {onSetWin && (
+        <button
+          onClick={onSetWin}
+          title={client.win ? `Edit win: ${client.win}` : `Log a win for ${client.name}`}
+          style={{
+            border: 'none',
+            background: client.win ? color.greenTintBg : 'transparent',
+            color: client.win ? color.green : color.faint,
+            borderRadius: 20,
+            fontSize: 11.5,
+            fontWeight: 600,
+            cursor: 'pointer',
+            padding: client.win ? '3px 9px' : '3px 6px',
+            flex: 'none',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {client.win ? `🏆 ${client.win}` : '🏆 +'}
+        </button>
       )}
       {onRemove && (
         <button
