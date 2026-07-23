@@ -29,8 +29,15 @@ export function effCheck(checks: ChecksMap, key: string, base: boolean): boolean
 
 /**
  * Status is derived from the reported numbers rather than stored, so it can
- * never drift from the data. A trainer with nothing set up yet (no scheduled
- * sessions and no clients) is left on 'track' instead of being flagged.
+ * never drift from the data.
+ *
+ * Design intent (tuned): attendance is the primary accountability signal and
+ * the ONLY thing that can flag a trainer "behind" (red). A week that hasn't
+ * been reported yet (scheduled === 0) is never flagged — the weekly summary
+ * calls out non-reporters separately. Check-in completion is a softer signal:
+ * it can raise "at risk" (amber) but never "behind", so a trainer with a strong
+ * show rate isn't buried red just because they added a client they haven't
+ * checked in yet.
  */
 export function deriveStatus(
   showRate: number,
@@ -38,9 +45,16 @@ export function deriveStatus(
   scheduled: number,
   totalClients: number,
 ): StatusKey {
-  if (scheduled === 0 && totalClients === 0) return 'track'
-  if (showRate < 70 || checkinRate < 0.5) return 'behind'
-  if (showRate < 88 || checkinRate < 0.8) return 'risk'
+  // Nothing reported yet → don't flag (no attendance data to judge on).
+  if (scheduled === 0) return 'track'
+
+  // Attendance — the only path to "behind".
+  if (showRate < 70) return 'behind'
+  if (showRate < 88) return 'risk'
+
+  // Check-ins — secondary, capped at "at risk".
+  if (totalClients > 0 && checkinRate < 0.5) return 'risk'
+
   return 'track'
 }
 
