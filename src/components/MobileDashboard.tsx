@@ -182,7 +182,14 @@ export function MobileDashboard(props: {
                       <div style={{ fontWeight: 600, fontSize: 14.5 }}>{m.name}</div>
                       <div style={{ fontSize: 11.5, color: color.muted }}>{m.role}</div>
                     </div>
-                    <StatusPill label={m.statusLabel} bg={m.statusBg} fg={m.statusFg} fontSize={11} />
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 3 }}>
+                      <StatusPill label={m.statusLabel} bg={m.statusBg} fg={m.statusFg} fontSize={11} />
+                      {m.streakLabel && (
+                        <span style={{ fontSize: 10, fontWeight: 600, color: m.statusFg }}>
+                          ↳ {m.streakLabel}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <div style={{ display: 'flex', gap: 16, marginTop: 12 }}>
                     <div>

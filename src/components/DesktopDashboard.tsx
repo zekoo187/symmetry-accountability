@@ -361,8 +361,13 @@ export function DesktopDashboard(props: {
                           clients
                         </span>
                       </div>
-                      <div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-start' }}>
                         <StatusPill label={m.statusLabel} bg={m.statusBg} fg={m.statusFg} />
+                        {m.streakLabel && (
+                          <span style={{ fontSize: 10.5, fontWeight: 600, color: m.statusFg }}>
+                            ↳ {m.streakLabel} running
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>

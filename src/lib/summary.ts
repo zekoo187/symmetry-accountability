@@ -25,17 +25,17 @@ export function buildWeeklySummary(
   )
   lines.push('')
 
-  // who needs attention (behind first, then at-risk)
-  const flagged = members
-    .filter((m) => m.flagged)
-    .sort((a, b) => (a.status === 'behind' ? -1 : 1) - (b.status === 'behind' ? -1 : 1))
+  // who needs attention — behind before at-risk, longer streaks first
+  const severity = (m: DerivedMember) => (m.status === 'behind' ? 100 : 50) + m.streak
+  const flagged = members.filter((m) => m.flagged).sort((a, b) => severity(b) - severity(a))
   if (flagged.length) {
     lines.push('⚠️ Needs attention:')
     for (const m of flagged) {
       const bits: string[] = [`${m.showRatePct} show`]
       if (m.totalClients > 0) bits.push(`check-ins ${m.checkinText}`)
       if (m.noShows + m.cancels > 0) bits.push(`${m.noShows + m.cancels} no-show/cancel`)
-      lines.push(`• ${m.name} — ${bits.join(', ')}`)
+      const streak = m.streakLabel ? ` · ${m.streakLabel} running` : ''
+      lines.push(`• ${m.name} — ${bits.join(', ')}${streak}`)
     }
     lines.push('')
   }

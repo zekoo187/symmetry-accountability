@@ -84,6 +84,32 @@ export function sparklineFor(weeks: Week[], weekIdx: number, trainerId: string):
     .join(' ')
 }
 
+/** Compute a trainer's status for one week straight from that week's numbers. */
+function statusForWeek(m: WeeklyMember): StatusKey {
+  const sched = m.showed + m.noShows + m.cancels
+  const showRate = sched > 0 ? Math.round((m.showed / sched) * 100) : 0
+  const total = m.clients.length
+  const checkedIn = m.clients.filter((c) => c.water && c.weekly).length
+  return deriveStatus(showRate, total ? checkedIn / total : 1, sched, total)
+}
+
+/**
+ * How many consecutive weeks (ending at weekIdx, going back) this trainer has
+ * been flagged. A non-flagged or unreported week breaks the run. `streak >= 2`
+ * means "flagged this week and at least one before it".
+ */
+export function flagStreak(weeks: Week[], weekIdx: number, trainerId: string): number {
+  let streak = 0
+  for (let i = weekIdx; i < weeks.length; i++) {
+    const m = weeks[i]?.members.find((x) => x.id === trainerId)
+    if (!m || statusForWeek(m) === 'track') break
+    streak++
+  }
+  return streak
+}
+
+const ordinal = (n: number) => (n === 1 ? '1st' : n === 2 ? '2nd' : n === 3 ? '3rd' : `${n}th`)
+
 export interface DerivedClient {
   name: string
   water: boolean
@@ -120,6 +146,8 @@ export interface DerivedMember {
   statusBg: string
   statusFg: string
   flagged: boolean
+  streak: number // consecutive flagged weeks incl. this one (0 or 1 = not a run)
+  streakLabel: string // e.g. '3rd week' when streak >= 2, else ''
 
   noShows: number
   cancels: number
@@ -138,6 +166,7 @@ export function deriveMember(
   checks: ChecksMap,
   expanded: boolean,
   points?: string,
+  streak = 0,
 ): DerivedMember {
   // scheduled is the sum of what happened, so it can't disagree with the parts
   const sched = m.showed + m.noShows + m.cancels
@@ -190,6 +219,8 @@ export function deriveMember(
     statusBg: s.bg,
     statusFg: s.fg,
     flagged,
+    streak,
+    streakLabel: flagged && streak >= 2 ? `${ordinal(streak)} week` : '',
 
     noShows: m.noShows,
     cancels: m.cancels,
@@ -381,7 +412,14 @@ export function deriveWeek(
 ) {
   const week = weeks[weekIdx]
   const members = week.members.map((m) =>
-    deriveMember(m, week.id, checks, expandedId === m.id, sparklineFor(weeks, weekIdx, m.id)),
+    deriveMember(
+      m,
+      week.id,
+      checks,
+      expandedId === m.id,
+      sparklineFor(weeks, weekIdx, m.id),
+      flagStreak(weeks, weekIdx, m.id),
+    ),
   )
   const totals = deriveTotals(members)
   return { members, totals }

@@ -63,6 +63,22 @@ export function DetailDrawer({
             <StatusPill label={m.statusLabel} bg={m.statusBg} fg={m.statusFg} fontSize={12.5} />
           </div>
 
+          {m.streakLabel && (
+            <div
+              style={{
+                background: m.statusBg,
+                color: m.statusFg,
+                borderRadius: 10,
+                padding: '9px 12px',
+                fontSize: 12.5,
+                fontWeight: 600,
+                marginBottom: 16,
+              }}
+            >
+              ⚠️ {m.streakLabel} running — flagged {m.streak} weeks in a row.
+            </div>
+          )}
+
           <div
             style={{
               display: 'grid',
