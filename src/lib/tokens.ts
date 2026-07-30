@@ -67,8 +67,6 @@ export const avatarColor: Record<string, string> = {
   Roma: '#E2603A',
   Natalia: '#C98A16',
   Santiago: '#2E7D5B',
-  Ivan: '#B0574A',
-  Simona: '#9A6DB8',
 }
 
 export type StatusKey = 'track' | 'risk' | 'behind'

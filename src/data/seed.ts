@@ -19,8 +19,6 @@ export const ROSTER: Trainer[] = [
   { id: 'RO', name: 'Roma', initials: 'RO', role: 'HIIT', avatarBg: '#E2603A' },
   { id: 'NA', name: 'Natalia', initials: 'NA', role: 'Mobility', avatarBg: '#C98A16' },
   { id: 'SA', name: 'Santiago', initials: 'SA', role: 'Strength', avatarBg: '#2E7D5B' },
-  { id: 'IV', name: 'Ivan', initials: 'IV', role: 'Boxing', avatarBg: '#B0574A' },
-  { id: 'SM', name: 'Simona', initials: 'SM', role: 'Pilates', avatarBg: '#9A6DB8' },
 ]
 
 type MemberData = Omit<WeeklyMember, keyof Trainer>
@@ -65,18 +63,6 @@ export const WEEKS: Week[] = [
         clients: [cl('Ana G.', 1, 1, '−4 lb'), cl('Ben H.', 1, 1), cl('Ced L.', 1, 1)],
         note: 'Top performer this week — fully booked ahead.',
       },
-      IV: {
-        sessions: 8, sched: 16, showed: 8, noShows: 5, cancels: 3, nextWeek: 10,
-        status: 'behind', points: '0,4 11,7 23,10 34,13 46,16',
-        clients: [cl('Jay T.', 0, 0), cl('Ella V.', 1, 0), cl('Rob C.', 0, 0)],
-        note: 'Half of sessions were no-shows or cancels and check-ins are stalled. Needs a reminder today.',
-      },
-      SM: {
-        sessions: 20, sched: 21, showed: 20, noShows: 1, cancels: 0, nextWeek: 21,
-        status: 'track', points: '0,12 11,10 23,9 34,7 46,6',
-        clients: [cl('Pia N.', 1, 1), cl('Gus A.', 1, 1, 'PR deadlift'), cl('Ivy R.', 1, 1)],
-        note: 'Consistent, clients all logging.',
-      },
     }),
   },
   {
@@ -85,7 +71,6 @@ export const WEEKS: Week[] = [
     short: 'Jun 29–Jul 5',
     startDate: '2026-06-29',
     wins: [
-      { stat: '−3 lb', text: 'Simona’s client Gus down 3 lb before his meet' },
       { stat: '92%', text: 'Team show rate up 6 points on last week' },
     ],
     members: build({
@@ -109,16 +94,6 @@ export const WEEKS: Week[] = [
         sessions: 24, sched: 25, showed: 24, noShows: 0, cancels: 1, nextWeek: 26,
         status: 'track', points: '0,13 11,10 23,8 34,5 46,3',
         clients: [cl('Ana G.', 1, 1), cl('Ben H.', 1, 1), cl('Ced L.', 1, 1)], note: 'Reliable.',
-      },
-      IV: {
-        sessions: 12, sched: 15, showed: 12, noShows: 2, cancels: 1, nextWeek: 14,
-        status: 'risk', points: '0,8 11,8 23,9 34,10 46,11',
-        clients: [cl('Jay T.', 1, 0), cl('Ella V.', 1, 1), cl('Rob C.', 0, 0)], note: 'Slipping — flag early.',
-      },
-      SM: {
-        sessions: 19, sched: 20, showed: 19, noShows: 1, cancels: 0, nextWeek: 21,
-        status: 'track', points: '0,11 11,10 23,9 34,8 46,7',
-        clients: [cl('Pia N.', 1, 1), cl('Gus A.', 1, 1, '−3 lb'), cl('Ivy R.', 1, 1)], note: 'Great.',
       },
     }),
   },
@@ -148,16 +123,6 @@ export const WEEKS: Week[] = [
         sessions: 22, sched: 23, showed: 22, noShows: 0, cancels: 1, nextWeek: 25,
         status: 'track', points: '0,12 11,10 23,9 34,7 46,5',
         clients: [cl('Ana G.', 1, 1), cl('Ben H.', 1, 1)], note: 'Ahead of plan.',
-      },
-      IV: {
-        sessions: 13, sched: 14, showed: 13, noShows: 1, cancels: 0, nextWeek: 15,
-        status: 'track', points: '0,10 11,10 23,9 34,9 46,8',
-        clients: [cl('Ella V.', 1, 1), cl('Rob C.', 1, 1)], note: 'Doing fine here.',
-      },
-      SM: {
-        sessions: 18, sched: 19, showed: 18, noShows: 1, cancels: 0, nextWeek: 20,
-        status: 'track', points: '0,11 11,10 23,9 34,9 46,8',
-        clients: [cl('Pia N.', 1, 1), cl('Ivy R.', 1, 1)], note: 'Consistent.',
       },
     }),
   },
