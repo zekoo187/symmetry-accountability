@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { color, font, shadow } from '../lib/tokens'
-import type { CurrentUser } from '../lib/types'
+import type { Checklist, CurrentUser, Retention } from '../lib/types'
+import { CHECKLIST_ITEMS, EMPTY_CHECKLIST } from '../lib/types'
 import { colorForRate, deriveMember } from '../lib/derive'
 import { useData } from '../data/DataContext'
 import { useAuth } from '../auth/AuthContext'
@@ -10,8 +11,16 @@ import { ClientCheckinRow } from './ClientCheckinRow'
 import { ChangePasswordLink } from '../account/AccountModal'
 
 export function TrainerView({ user }: { user: CurrentUser }) {
-  const { weeks, checks, toggleCheck, addClient, removeClient, saveWeeklyStats, setClientWin } =
-    useData()
+  const {
+    weeks,
+    checks,
+    toggleCheck,
+    addClient,
+    removeClient,
+    saveWeeklyStats,
+    setClientWin,
+    setRetention,
+  } = useData()
   const { signOut } = useAuth()
   const [weekIdx, setWeekIdx] = useState(0)
   const [newClient, setNewClient] = useState('')
@@ -34,8 +43,10 @@ export function TrainerView({ user }: { user: CurrentUser }) {
     noShows: '0',
     cancels: '0',
     nextWeek: '0',
+    newClients: '0',
     note: '',
   })
+  const [checklist, setChecklist] = useState<Checklist>(EMPTY_CHECKLIST)
   const [saving, setSaving] = useState(false)
   const [savedTick, setSavedTick] = useState(false)
 
@@ -47,8 +58,10 @@ export function TrainerView({ user }: { user: CurrentUser }) {
       noShows: String(m.noShows),
       cancels: String(m.cancels),
       nextWeek: String(m.nextWeek),
+      newClients: String(m.newClients),
       note: m.note ?? '',
     })
+    setChecklist(m.checklist)
     setSavedTick(false)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [week?.id, m?.id])
@@ -117,6 +130,8 @@ export function TrainerView({ user }: { user: CurrentUser }) {
               noShows: fNoShows,
               cancels: fCancels,
               nextWeek: num(form.nextWeek),
+              newClients: num(form.newClients),
+              checklist,
               note: form.note.trim(),
             })
             setSaving(false)
@@ -162,6 +177,14 @@ export function TrainerView({ user }: { user: CurrentUser }) {
                 setSavedTick(false)
               }}
             />
+            <NumField
+              label="New clients this week"
+              value={form.newClients}
+              onChange={(v) => {
+                setForm((f) => ({ ...f, newClients: v }))
+                setSavedTick(false)
+              }}
+            />
           </div>
 
           {/* live preview of what these numbers produce */}
@@ -186,6 +209,61 @@ export function TrainerView({ user }: { user: CurrentUser }) {
               Show rate{' '}
               <b style={{ color: colorForRate(fShowRate) }}>{fScheduled > 0 ? `${fShowRate}%` : '—'}</b>
             </span>
+          </div>
+
+          {/* weekly action checklist */}
+          <div style={{ marginTop: 14 }}>
+            <SectionLabel style={{ marginBottom: 8 }}>This week I…</SectionLabel>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+              {CHECKLIST_ITEMS.map((item) => {
+                const done = checklist[item.key]
+                return (
+                  <button
+                    key={item.key}
+                    type="button"
+                    onClick={() => {
+                      setChecklist((c) => ({ ...c, [item.key]: !c[item.key] }))
+                      setSavedTick(false)
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 10,
+                      width: '100%',
+                      textAlign: 'left',
+                      padding: '9px 11px',
+                      borderRadius: 9,
+                      border: `1px solid ${done ? color.greenTintBorder : color.border}`,
+                      background: done ? color.greenTintBg : '#fff',
+                      cursor: 'pointer',
+                      fontFamily: font.body,
+                      fontSize: 13.5,
+                      color: done ? color.greenDark : color.text2,
+                      fontWeight: done ? 600 : 400,
+                    }}
+                  >
+                    <span
+                      style={{
+                        width: 20,
+                        height: 20,
+                        borderRadius: 6,
+                        flex: 'none',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: done ? color.green : '#fff',
+                        border: `1px solid ${done ? color.green : color.border}`,
+                        color: '#fff',
+                        fontSize: 13,
+                      }}
+                    >
+                      {done ? '✓' : ''}
+                    </span>
+                    {item.label}
+                  </button>
+                )
+              })}
+            </div>
           </div>
 
           <textarea
@@ -263,6 +341,7 @@ export function TrainerView({ user }: { user: CurrentUser }) {
                 )
                 if (next !== null) void setClientWin(week.id, m.id, c.name, next)
               }}
+              onSetRetention={(next: Retention) => void setRetention(m.id, c.name, next)}
               onRemove={() => {
                 if (confirm(`Remove ${c.name} from your client list?`)) {
                   void removeClient(m.id, c.name)

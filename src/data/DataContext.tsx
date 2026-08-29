@@ -8,7 +8,14 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import type { ChecksMap, CurrentUser, NudgedMap, Week, WeeklyStatsInput } from '../lib/types'
+import type {
+  ChecksMap,
+  CurrentUser,
+  NudgedMap,
+  Retention,
+  Week,
+  WeeklyStatsInput,
+} from '../lib/types'
 import { checkKeyStr } from '../lib/types'
 import { isSupabaseConfigured } from '../lib/supabase'
 import type { DataAdapter } from './adapter'
@@ -46,6 +53,7 @@ interface DataContextValue {
     clientName: string,
     winText: string,
   ) => Promise<void>
+  setRetention: (trainerId: string, clientName: string, retention: Retention) => Promise<void>
 }
 
 const DataContext = createContext<DataContextValue | null>(null)
@@ -179,6 +187,18 @@ export function DataProvider({ user, children }: { user: CurrentUser; children: 
     [user, refreshWeeks],
   )
 
+  const setRetention = useCallback<DataContextValue['setRetention']>(
+    async (trainerId, clientName, retention) => {
+      try {
+        await adapter.setRetention(user, trainerId, clientName, retention)
+        await refreshWeeks()
+      } catch (e) {
+        if (mounted.current) setError(e instanceof Error ? e.message : 'Failed to save status')
+      }
+    },
+    [user, refreshWeeks],
+  )
+
   const value = useMemo<DataContextValue>(
     () => ({
       loading,
@@ -194,6 +214,7 @@ export function DataProvider({ user, children }: { user: CurrentUser; children: 
       removeClient,
       saveWeeklyStats,
       setClientWin,
+      setRetention,
     }),
     [
       loading,
@@ -208,6 +229,7 @@ export function DataProvider({ user, children }: { user: CurrentUser; children: 
       removeClient,
       saveWeeklyStats,
       setClientWin,
+      setRetention,
     ],
   )
 

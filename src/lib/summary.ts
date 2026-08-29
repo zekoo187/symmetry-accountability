@@ -23,7 +23,29 @@ export function buildWeeklySummary(
   lines.push(
     `Team: ${totals.sessions} sessions · ${totals.showRate}% show rate · ${totals.noShows} no-shows/cancels`,
   )
+  const growth: string[] = []
+  if (totals.newClients > 0) growth.push(`+${totals.newClients} new client${totals.newClients === 1 ? '' : 's'}`)
+  if (totals.atRisk > 0) growth.push(`${totals.atRisk} at-risk`)
+  if (totals.lost > 0) growth.push(`${totals.lost} lost`)
+  if (growth.length) lines.push(growth.join(' · '))
   lines.push('')
+
+  // retention — clients flagged at-risk or lost, grouped by trainer
+  const retentionLines = members
+    .filter((m) => m.atRisk > 0 || m.lost > 0)
+    .map((m) => {
+      const parts: string[] = []
+      const atRiskNames = m.clients.filter((c) => c.retention === 'at_risk').map((c) => c.name)
+      const lostNames = m.clients.filter((c) => c.retention === 'lost').map((c) => c.name)
+      if (atRiskNames.length) parts.push(`at-risk: ${atRiskNames.join(', ')}`)
+      if (lostNames.length) parts.push(`lost: ${lostNames.join(', ')}`)
+      return `• ${m.name} — ${parts.join(' · ')}`
+    })
+  if (retentionLines.length) {
+    lines.push('🔻 Retention watch:')
+    lines.push(...retentionLines)
+    lines.push('')
+  }
 
   // who needs attention — behind before at-risk, longer streaks first
   const severity = (m: DerivedMember) => (m.status === 'behind' ? 100 : 50) + m.streak
@@ -51,6 +73,19 @@ export function buildWeeklySummary(
   if (week.wins.length) {
     lines.push('🏆 Wins:')
     for (const w of week.wins) lines.push(`• ${w.stat} — ${w.text}`)
+    lines.push('')
+  }
+
+  // trainers who reported but skipped weekly actions
+  const incompleteActions = members.filter(
+    (m) => (m.sessions > 0 || m.totalClients > 0) && m.checklistDone < m.checklistTotal,
+  )
+  if (incompleteActions.length) {
+    lines.push(
+      `☑️ Actions outstanding: ${incompleteActions
+        .map((m) => `${m.name} (${m.checklistDone}/${m.checklistTotal})`)
+        .join(', ')}`,
+    )
     lines.push('')
   }
 

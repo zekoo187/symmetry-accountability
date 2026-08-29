@@ -7,3 +7,6 @@ dist-ssr
 .DS_Store
 .vite
 *.tsbuildinfo
+
+# Contains real account passwords — never commit to the public repo
+supabase/REBUILD.sql

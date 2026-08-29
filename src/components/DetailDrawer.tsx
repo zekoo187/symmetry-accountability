@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { color, font, shadow, winsGradient } from '../lib/tokens'
 import type { Week } from '../lib/types'
+import { CHECKLIST_ITEMS } from '../lib/types'
 import {
   buildStatDrawer,
   type DerivedMember,
@@ -91,6 +92,50 @@ export function DetailDrawer({
             <Tile label="Show rate" value={m.showRatePct} valueColor={m.trendColor} />
             <Tile label="No-shows" value={String(m.noShows)} valueColor={m.noShowColor} />
             <Tile label="Booked next wk" value={String(m.nextWeek)} valueColor={color.green} />
+            <Tile
+              label="New clients"
+              value={String(m.newClients)}
+              valueColor={m.newClients > 0 ? color.green : color.ink}
+            />
+            <Tile
+              label="Retention"
+              value={
+                m.atRisk + m.lost === 0
+                  ? 'All active'
+                  : [m.atRisk ? `${m.atRisk} at-risk` : '', m.lost ? `${m.lost} lost` : '']
+                      .filter(Boolean)
+                      .join(', ')
+              }
+              valueColor={m.lost > 0 ? color.red : m.atRisk > 0 ? color.amber : color.green}
+              small={m.atRisk + m.lost > 0}
+            />
+          </div>
+
+          {/* weekly action checklist */}
+          <SectionLabel style={{ marginBottom: 8 }}>
+            Weekly actions — {m.checklistDone}/{m.checklistTotal}
+          </SectionLabel>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 18 }}>
+            {CHECKLIST_ITEMS.map((item) => {
+              const done = m.checklist[item.key]
+              return (
+                <div
+                  key={item.key}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 9,
+                    fontSize: 13,
+                    color: done ? color.text2 : color.muted,
+                  }}
+                >
+                  <span style={{ color: done ? color.green : color.arrowDisabled, fontWeight: 700 }}>
+                    {done ? '✓' : '○'}
+                  </span>
+                  {item.label}
+                </div>
+              )
+            })}
           </div>
 
           <SectionLabel style={{ marginBottom: 10 }}>
@@ -302,10 +347,13 @@ function Tile({
   label,
   value,
   valueColor = color.ink,
+  small = false,
 }: {
   label: string
   value: string
   valueColor?: string
+  /** Use a smaller value font for multi-word values (e.g. "1 at-risk, 1 lost"). */
+  small?: boolean
 }) {
   return (
     <div
@@ -316,7 +364,10 @@ function Tile({
       }}
     >
       <div style={{ fontSize: 11.5, color: color.muted, marginBottom: 4 }}>{label}</div>
-      <div className="sg" style={{ fontWeight: 700, fontSize: 20, color: valueColor }}>
+      <div
+        className="sg"
+        style={{ fontWeight: 700, fontSize: small ? 14 : 20, color: valueColor, lineHeight: 1.2 }}
+      >
         {value}
       </div>
     </div>

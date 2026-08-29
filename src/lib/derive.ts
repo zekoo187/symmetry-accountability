@@ -1,6 +1,6 @@
 import { color, statusMeta } from './tokens'
-import type { ChecksMap, StatusKey, Week, WeeklyMember } from './types'
-import { checkKeyStr } from './types'
+import type { Checklist, ChecksMap, Retention, StatusKey, Week, WeeklyMember } from './types'
+import { CHECKLIST_ITEMS, checkKeyStr } from './types'
 
 // ---------------------------------------------------------------------------
 // All derived values + thresholds, ported from the prototype's renderVals()
@@ -115,6 +115,7 @@ export interface DerivedClient {
   water: boolean
   weekly: boolean
   win: string
+  retention: Retention
   waterKey: string
   weeklyKey: string
 }
@@ -155,6 +156,13 @@ export interface DerivedMember {
   noShowColor: string
   cancelColor: string
 
+  newClients: number
+  atRisk: number // clients marked at-risk
+  lost: number // clients marked lost
+  checklist: Checklist
+  checklistDone: number
+  checklistTotal: number
+
   rowBg: string
   cardBorder: string
   note: string
@@ -178,6 +186,7 @@ export function deriveMember(
     return {
       name: c.name,
       win: c.win,
+      retention: c.retention,
       water: effCheck(checks, waterKey, c.water),
       weekly: effCheck(checks, weeklyKey, c.weekly),
       waterKey,
@@ -191,6 +200,10 @@ export function deriveMember(
   const status = deriveStatus(showRate, checkinRate, sched, totalClients)
   const s = statusMeta[status]
   const flagged = status !== 'track'
+
+  const atRisk = clients.filter((c) => c.retention === 'at_risk').length
+  const lost = clients.filter((c) => c.retention === 'lost').length
+  const checklistDone = CHECKLIST_ITEMS.filter((i) => m.checklist[i.key]).length
 
   return {
     raw: m,
@@ -228,6 +241,13 @@ export function deriveMember(
     noShowColor: colorForNoShows(m.noShows),
     cancelColor: m.cancels > 0 ? color.amber : color.ink,
 
+    newClients: m.newClients,
+    atRisk,
+    lost,
+    checklist: m.checklist,
+    checklistDone,
+    checklistTotal: CHECKLIST_ITEMS.length,
+
     rowBg:
       status === 'behind'
         ? color.rowBehindBg
@@ -251,6 +271,9 @@ export interface WeekTotals {
   showRate: number // percent
   noShows: number // no-shows + cancels
   flagged: number
+  newClients: number
+  atRisk: number
+  lost: number
 }
 
 export function deriveTotals(members: DerivedMember[]): WeekTotals {
@@ -264,6 +287,9 @@ export function deriveTotals(members: DerivedMember[]): WeekTotals {
     showRate: schedSum ? Math.round((showedSum / schedSum) * 100) : 0,
     noShows,
     flagged,
+    newClients: members.reduce((a, m) => a + m.newClients, 0),
+    atRisk: members.reduce((a, m) => a + m.atRisk, 0),
+    lost: members.reduce((a, m) => a + m.lost, 0),
   }
 }
 

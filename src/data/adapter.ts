@@ -1,4 +1,11 @@
-import type { ChecksMap, CurrentUser, NudgedMap, Week, WeeklyStatsInput } from '../lib/types'
+import type {
+  ChecksMap,
+  CurrentUser,
+  NudgedMap,
+  Retention,
+  Week,
+  WeeklyStatsInput,
+} from '../lib/types'
 
 /**
  * The persistence boundary. Two implementations:
@@ -52,5 +59,13 @@ export interface DataAdapter {
     trainerId: string,
     clientName: string,
     winText: string,
+  ): Promise<void>
+
+  /** Set a client's retention status (persistent, not week-scoped). */
+  setRetention(
+    user: CurrentUser,
+    trainerId: string,
+    clientName: string,
+    retention: Retention,
   ): Promise<void>
 }

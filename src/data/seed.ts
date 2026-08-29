@@ -1,4 +1,5 @@
 import type { Trainer, Week, WeeklyMember, ClientCheckin } from '../lib/types'
+import { EMPTY_CHECKLIST } from '../lib/types'
 
 // ---------------------------------------------------------------------------
 // Sample data — ported verbatim from the prototype's getWeeks().
@@ -12,6 +13,7 @@ const cl = (name: string, water: number, weekly: number, win = ''): ClientChecki
   water: !!water,
   weekly: !!weekly,
   win,
+  retention: 'active',
 })
 
 export const ROSTER: Trainer[] = [
@@ -21,10 +23,11 @@ export const ROSTER: Trainer[] = [
   { id: 'SA', name: 'Santiago', initials: 'SA', role: 'Strength', avatarBg: '#2E7D5B' },
 ]
 
-type MemberData = Omit<WeeklyMember, keyof Trainer>
+// The new-in-2026 fields default in build(), so the sample entries below stay untouched.
+type MemberData = Omit<WeeklyMember, keyof Trainer | 'newClients' | 'checklist'>
 
 function build(data: Record<string, MemberData>): WeeklyMember[] {
-  return ROSTER.map((r) => ({ ...r, ...data[r.id] }))
+  return ROSTER.map((r) => ({ newClients: 0, checklist: { ...EMPTY_CHECKLIST }, ...r, ...data[r.id] }))
 }
 
 export const WEEKS: Week[] = [

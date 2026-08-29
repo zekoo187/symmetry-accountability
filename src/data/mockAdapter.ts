@@ -1,4 +1,11 @@
-import type { ChecksMap, CurrentUser, NudgedMap, Week, WeeklyStatsInput } from '../lib/types'
+import type {
+  ChecksMap,
+  CurrentUser,
+  NudgedMap,
+  Retention,
+  Week,
+  WeeklyStatsInput,
+} from '../lib/types'
 import { checkKeyStr } from '../lib/types'
 import { WEEKS } from './seed'
 import type { DataAdapter } from './adapter'
@@ -9,6 +16,7 @@ const ADDED_KEY = 'sf_added_clients' // { [trainerId]: string[] }
 const REMOVED_KEY = 'sf_removed_clients' // { [trainerId]: string[] }
 const STATS_KEY = 'sf_weekly_stats' // { [`${weekId}:${trainerId}`]: WeeklyStatsInput }
 const WINS_KEY = 'sf_client_wins' // { [`${weekId}:${trainerId}:${clientName}`]: string }
+const RETENTION_KEY = 'sf_retention' // { [`${trainerId}:${clientName}`]: Retention }
 
 function read<T>(key: string, fallback: T): T {
   try {
@@ -38,17 +46,29 @@ function cloneWeeks(): Week[] {
   const removed = read<NameListMap>(REMOVED_KEY, {})
   const stats = read<Record<string, WeeklyStatsInput>>(STATS_KEY, {})
   const winOverrides = read<Record<string, string>>(WINS_KEY, {})
+  const retention = read<Record<string, Retention>>(RETENTION_KEY, {})
   return WEEKS.map((w) => {
     const members = w.members.map((m) => {
       const gone = new Set(removed[m.id] ?? [])
       const kept = m.clients.filter((c) => !gone.has(c.name)).map((c) => ({ ...c }))
       const extra = (added[m.id] ?? [])
         .filter((n) => !gone.has(n) && !kept.some((c) => c.name === n))
-        .map((n) => ({ name: n, water: false, weekly: false, win: '' }))
+        .map((n) => ({
+          name: n,
+          water: false,
+          weekly: false,
+          win: '',
+          retention: 'active' as Retention,
+        }))
       const clients = [...kept, ...extra]
         .map((c) => {
-          const key = `${w.id}:${m.id}:${c.name}`
-          return key in winOverrides ? { ...c, win: winOverrides[key] } : c
+          const winKey = `${w.id}:${m.id}:${c.name}`
+          const retKey = `${m.id}:${c.name}`
+          return {
+            ...c,
+            win: winKey in winOverrides ? winOverrides[winKey] : c.win,
+            retention: retKey in retention ? retention[retKey] : c.retention,
+          }
         })
         .sort((a, b) => a.name.localeCompare(b.name))
       const s = stats[`${w.id}:${m.id}`]
@@ -62,6 +82,8 @@ function cloneWeeks(): Week[] {
         cancels: s.cancels,
         sched: s.sessions + s.noShows + s.cancels,
         nextWeek: s.nextWeek,
+        newClients: s.newClients,
+        checklist: s.checklist,
         note: s.note,
       }
     })
@@ -119,6 +141,12 @@ export const mockAdapter: DataAdapter = {
     const wins = read<Record<string, string>>(WINS_KEY, {})
     wins[`${weekId}:${trainerId}:${clientName}`] = winText.trim()
     write(WINS_KEY, wins)
+  },
+
+  async setRetention(_user, trainerId, clientName, retention): Promise<void> {
+    const map = read<Record<string, Retention>>(RETENTION_KEY, {})
+    map[`${trainerId}:${clientName}`] = retention
+    write(RETENTION_KEY, map)
   },
 
   async addClient(_user, trainerId, clientName): Promise<void> {

@@ -1,12 +1,15 @@
 import type {
+  Checklist,
   ChecksMap,
   ClientCheckin,
   CurrentUser,
   NudgedMap,
+  Retention,
   StatusKey,
   Week,
   WeeklyMember,
 } from '../lib/types'
+import { EMPTY_CHECKLIST } from '../lib/types'
 import { supabase } from '../lib/supabase'
 import { ROSTER } from './seed'
 import type { DataAdapter } from './adapter'
@@ -39,6 +42,7 @@ interface ClientRow {
   id: string
   trainer_id: string
   name: string
+  retention: Retention | null
 }
 interface WeekRow {
   id: string
@@ -56,6 +60,8 @@ interface StatRow {
   no_shows: number
   cancels: number
   next_week_booked: number
+  new_clients: number | null
+  checklist: Partial<Checklist> | null
   status: StatusKey
   sparkline_points: string
   note: string
@@ -135,6 +141,7 @@ export const supabaseAdapter: DataAdapter = {
               water: ci?.hydration_done ?? false,
               weekly: ci?.weighin_done ?? false,
               win: ci?.win_text ?? '',
+              retention: c.retention ?? 'active',
             }
           })
         return {
@@ -149,6 +156,8 @@ export const supabaseAdapter: DataAdapter = {
           noShows: s?.no_shows ?? 0,
           cancels: s?.cancels ?? 0,
           nextWeek: s?.next_week_booked ?? 0,
+          newClients: s?.new_clients ?? 0,
+          checklist: { ...EMPTY_CHECKLIST, ...(s?.checklist ?? {}) },
           status: s?.status ?? 'track', // recomputed in derive.ts from the numbers
           points: s?.sparkline_points ?? '',
           note: s?.note ?? '',
@@ -274,10 +283,22 @@ export const supabaseAdapter: DataAdapter = {
         no_shows: noShows,
         cancels,
         next_week_booked: Math.max(0, Math.round(input.nextWeek)),
+        new_clients: Math.max(0, Math.round(input.newClients)),
+        checklist: input.checklist,
         note: input.note,
       },
       { onConflict: 'trainer_id,week_id' },
     )
+    if (error) throw error
+  },
+
+  async setRetention(_user, trainerId, clientName, retention): Promise<void> {
+    const sb = db()
+    const { error } = await sb
+      .from('clients')
+      .update({ retention })
+      .eq('trainer_id', trainerId)
+      .eq('name', clientName)
     if (error) throw error
   },
 }

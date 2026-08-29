@@ -12,12 +12,35 @@ export interface Trainer {
   avatarBg: string
 }
 
+/** Client retention status — a persistent per-client attribute the trainer sets. */
+export type Retention = 'active' | 'at_risk' | 'lost'
+
 export interface ClientCheckin {
   name: string
   water: boolean // daily hydration log done
   weekly: boolean // weekly weigh-in done
   win: string // optional celebrated win, '' if none
+  retention: Retention // active by default
 }
+
+/** The weekly accountability checklist a trainer ticks off. */
+export interface Checklist {
+  rebooked: boolean // rebooked active clients
+  followedUp: boolean // followed up with no-shows
+  loggedCheckins: boolean // logged all client check-ins
+}
+
+export const EMPTY_CHECKLIST: Checklist = {
+  rebooked: false,
+  followedUp: false,
+  loggedCheckins: false,
+}
+
+export const CHECKLIST_ITEMS: { key: keyof Checklist; label: string }[] = [
+  { key: 'rebooked', label: 'Rebooked my active clients' },
+  { key: 'followedUp', label: 'Followed up with no-shows' },
+  { key: 'loggedCheckins', label: 'Logged all client check-ins' },
+]
 
 /** A trainer's stats for one week (mirrors weekly_stats + joined check-ins). */
 export interface WeeklyMember extends Trainer {
@@ -27,6 +50,8 @@ export interface WeeklyMember extends Trainer {
   noShows: number
   cancels: number
   nextWeek: number
+  newClients: number // new clients / consults brought in this week
+  checklist: Checklist
   status: StatusKey
   points: string // sparkline polyline points
   note: string
@@ -48,12 +73,14 @@ export interface Week {
   members: WeeklyMember[]
 }
 
-/** The four numbers a trainer reports for their week. */
+/** What a trainer reports for their week. */
 export interface WeeklyStatsInput {
   sessions: number // sessions actually delivered
   noShows: number
   cancels: number
   nextWeek: number // sessions booked for next week
+  newClients: number // new clients / consults this week
+  checklist: Checklist
   note: string
 }
 
