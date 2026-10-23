@@ -7,7 +7,7 @@ import { WeekStepper } from './WeekStepper'
 import { SummaryButton } from './SummaryButton'
 import { ChangePasswordLink } from '../account/AccountModal'
 
-const NAV_ITEMS = ['Overview', 'Trainers', 'Check-ins', 'Sessions', 'Wins'] as const
+const NAV_ITEMS = ['Overview', 'Cards', 'Trainers', 'Check-ins', 'Sessions', 'Wins'] as const
 
 export function DesktopDashboard(props: {
   week: Week
