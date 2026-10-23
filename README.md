@@ -96,6 +96,21 @@ logs the nudge and emails the trainer.
 
 ---
 
+## Session cards (Oct 2026)
+
+Every session a coach fills the paper card, then taps **Log a session** in the app
+and types it in: outcome, readiness, bodyweight, pain check, habit days hit,
+exercise lines (`Back squat 5x5 185 lb`, one per line), effort, quality grade,
+win of the day, next session booked, and a photo of the card. Owners open
+**Cards** (desktop sidebar) or the **Session cards** button (phone) to see every
+coach's clients: cards logged, grades, on-time rate, habits on target, which
+movements went up in load since the previous session, pain flags, and clients
+who left without the next session booked. Tap a client for their full timeline.
+
+Data: `session_cards` table (migration `0005_session_cards.sql`, RLS: owners
+see all, a trainer only their own) and a private `cards` storage bucket for
+the photos, shrunk to ~1400px on the phone before upload.
+
 ## Project structure
 
 ```

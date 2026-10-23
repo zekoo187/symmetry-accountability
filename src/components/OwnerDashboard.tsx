@@ -7,9 +7,12 @@ import type { CurrentUser } from '../lib/types'
 import { DesktopDashboard } from './DesktopDashboard'
 import { MobileDashboard } from './MobileDashboard'
 import { DetailDrawer, type DrawerState } from './DetailDrawer'
+import { CoachBoard } from '../cards/CoachBoard'
+import { color, font } from '../lib/tokens'
 
 const NAV_TO_DRAWER: Record<string, DrawerState | null> = {
   Overview: null,
+  Cards: null,
   Trainers: { kind: 'stat', id: 'showrate' },
   'Check-ins': { kind: 'stat', id: 'checkins' },
   Sessions: { kind: 'stat', id: 'sessions' },
@@ -25,6 +28,7 @@ export function OwnerDashboard({ user }: { user: CurrentUser }) {
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [activeNav, setActiveNav] = useState('Overview')
   const [drawer, setDrawer] = useState<DrawerState | null>(null)
+  const [showCards, setShowCards] = useState(false)
 
   const week = weeks[weekIdx]
 
@@ -58,6 +62,10 @@ export function OwnerDashboard({ user }: { user: CurrentUser }) {
         : `Send reminders (${totals.flagged})`
 
   const onNav = (label: string) => {
+    if (label === 'Cards') {
+      setShowCards(true)
+      return
+    }
     setActiveNav(label)
     const d = NAV_TO_DRAWER[label]
     setDrawer(d ?? null)
@@ -107,6 +115,35 @@ export function OwnerDashboard({ user }: { user: CurrentUser }) {
           onNudgeAll={() => sendReminders(week.id, flaggedIds)}
           onSignOut={signOut}
         />
+      )}
+
+      {isMobile && !showCards && (
+        <button
+          type="button"
+          onClick={() => setShowCards(true)}
+          style={{
+            position: 'fixed',
+            right: 14,
+            bottom: 14,
+            zIndex: 60,
+            padding: '11px 16px',
+            borderRadius: 24,
+            border: 'none',
+            background: color.ink,
+            color: '#fff',
+            fontSize: 13.5,
+            fontWeight: 700,
+            fontFamily: font.body,
+            boxShadow: '0 8px 24px rgba(35,32,28,.25)',
+            cursor: 'pointer',
+          }}
+        >
+          Session cards
+        </button>
+      )}
+
+      {showCards && week && (
+        <CoachBoard user={user} trainers={week.members} onClose={() => setShowCards(false)} />
       )}
 
       {drawer && (

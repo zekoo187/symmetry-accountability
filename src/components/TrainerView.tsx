@@ -9,6 +9,7 @@ import { Avatar, Meter, SectionLabel, StatusPill } from './primitives'
 import { WeekStepper } from './WeekStepper'
 import { ClientCheckinRow } from './ClientCheckinRow'
 import { ChangePasswordLink } from '../account/AccountModal'
+import { TrainerCards } from '../cards/TrainerCards'
 
 export function TrainerView({ user }: { user: CurrentUser }) {
   const {
@@ -116,6 +117,9 @@ export function TrainerView({ user }: { user: CurrentUser }) {
           <Tile label="Booked next wk" value={String(m.nextWeek)} valueColor={color.green} />
         </div>
       </div>
+
+      {/* session cards: one per client per session */}
+      <TrainerCards user={user} trainerId={m.id} />
 
       {/* report your week */}
       <div style={{ padding: '20px 18px 0' }}>
