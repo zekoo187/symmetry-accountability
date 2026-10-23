@@ -1,26 +1,41 @@
 name: Supabase keep-alive
 
-# Pings the database every few days so the free-tier project never sits idle
-# long enough to auto-pause (which takes the app + all logins offline).
+# Touches the database every day so the free-tier project never sits idle long
+# enough to auto-pause (7 idle days takes the app and every login offline).
+# A ping counts only if PostgREST actually answers 200 with a row: a 401, a
+# DNS miss or a paused project all fail the job, so a red run means the
+# project is in trouble, not merely unreachable for a moment.
 on:
   schedule:
-    - cron: '17 9 */3 * *' # ~every 3 days (well inside the ~7-day idle window)
+    - cron: '17 9 * * *' # daily, 09:17 UTC
   workflow_dispatch: {} # allow manual runs from the Actions tab
 
 jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - name: Ping Supabase REST API
+      - name: Read one row through the REST API
+        env:
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
         run: |
-          code=$(curl -s -o /dev/null -w "%{http_code}" \
-            "${{ secrets.VITE_SUPABASE_URL }}/rest/v1/trainers?select=id&limit=1" \
-            -H "apikey: ${{ secrets.VITE_SUPABASE_ANON_KEY }}" \
-            -H "Authorization: Bearer ${{ secrets.VITE_SUPABASE_ANON_KEY }}")
-          echo "Supabase responded: HTTP $code"
-          # Any real HTTP response (even 401/empty) counts as a request and keeps
-          # the project awake. Only a network failure (000) is a problem.
-          if [ -z "$code" ] || [ "$code" = "000" ]; then
-            echo "::error::No response from Supabase — project may be paused or down."
+          set -u
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_KEY" ]; then
+            echo "::error::VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY secret is empty."
             exit 1
           fi
+          url="${SUPABASE_URL%/}/rest/v1/weeks?select=id&limit=1"
+          for attempt in 1 2 3 4; do
+            code=$(curl -sS -o /tmp/body -w "%{http_code}" --max-time 30 \
+              "$url" \
+              -H "apikey: $SUPABASE_KEY" \
+              -H "Authorization: Bearer $SUPABASE_KEY" || true)
+            echo "attempt $attempt: HTTP ${code:-none}"
+            if [ "$code" = "200" ]; then
+              echo "Supabase answered with: $(head -c 200 /tmp/body)"
+              exit 0
+            fi
+            sleep $((attempt * 20))
+          done
+          echo "::error::Supabase did not answer 200 after 4 attempts (last: ${code:-none}). Check whether the project is paused: https://supabase.com/dashboard/project/miukgmjlnejualtnhxkp"
+          exit 1
