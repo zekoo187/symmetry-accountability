@@ -10,3 +10,4 @@ dist-ssr
 
 # Contains real account passwords — never commit to the public repo
 supabase/REBUILD.sql
+.netlify

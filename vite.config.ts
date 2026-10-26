@@ -2,10 +2,12 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
 // https://vitejs.dev/config/
-// In production (GitHub Pages) the app is served from /symmetry-accountability/.
-// In local dev it stays at the root so `npm run dev` is unaffected.
+// On GitHub Pages the app is served from /symmetry-accountability/; on Netlify
+// (which sets NETLIFY=true at build time) and in local dev it is served from
+// the root. VITE_BASE overrides either when set.
+const base = process.env.VITE_BASE || (process.env.NETLIFY ? '/' : undefined)
 export default defineConfig(({ command }) => ({
-  base: command === 'build' ? '/symmetry-accountability/' : '/',
+  base: base ?? (command === 'build' ? '/symmetry-accountability/' : '/'),
   plugins: [react()],
   server: {
     port: 5180,
