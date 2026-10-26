@@ -96,6 +96,16 @@ logs the nudge and emails the trainer.
 
 ---
 
+## Address
+
+The site answers at **https://team.mysymmetryfitness.com** (set in `public/CNAME`,
+which GitHub Pages reads from the deployed files). While that domain is not yet
+pointed at GitHub, the site is at https://zekoo187.github.io/symmetry-accountability/
+with the build base path set accordingly. To change the address: edit
+`public/CNAME`, add a DNS CNAME record for that name pointing to
+`zekoo187.github.io`, and set the same custom domain under the repository's
+Settings → Pages.
+
 ## Session cards (Oct 2026)
 
 Every session a coach fills the paper card, then taps **Log a session** in the app
