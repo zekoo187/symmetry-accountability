@@ -3,7 +3,7 @@
  * mode, behind the same four calls so the UI does not care which.
  */
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
-import type { CurrentUser } from '../lib/types'
+import type { CurrentUser, Retention } from '../lib/types'
 import type { Grade, Outcome, Pain, SessionCard, SessionCardInput } from './types'
 import { WEEKS } from '../data/seed'
 
@@ -11,6 +11,7 @@ export interface ClientRef {
   id: string
   trainerId: string
   name: string
+  retention: Retention
 }
 
 export interface CardsApi {
@@ -145,12 +146,13 @@ async function clientNames(ids: string[]): Promise<Map<string, string>> {
 
 const supabaseCards: CardsApi = {
   async listClients(): Promise<ClientRef[]> {
-    const { data, error } = await sb().from('clients').select('id,trainer_id,name').order('name')
+    const { data, error } = await sb().from('clients').select('id,trainer_id,name,retention').order('name')
     if (error) throw error
-    return (data as { id: string; trainer_id: string; name: string }[]).map((c) => ({
+    return (data as { id: string; trainer_id: string; name: string; retention: Retention | null }[]).map((c) => ({
       id: c.id,
       trainerId: c.trainer_id,
       name: c.name,
+      retention: c.retention ?? 'active',
     }))
   },
 
@@ -242,7 +244,7 @@ const mockCards: CardsApi = {
     const out: ClientRef[] = []
     for (const m of WEEKS[0].members) {
       if (user.role === 'trainer' && m.id !== user.trainerId) continue
-      for (const c of m.clients) out.push({ id: `${m.id}:${c.name}`, trainerId: m.id, name: c.name })
+      for (const c of m.clients) out.push({ id: `${m.id}:${c.name}`, trainerId: m.id, name: c.name, retention: c.retention })
     }
     return out
   },

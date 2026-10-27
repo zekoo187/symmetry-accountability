@@ -6,6 +6,8 @@ import { cardsApi, daysBefore, todayISO, type ClientRef } from './cardsApi'
 import { progressions, sessionPatterns, type Progression } from './parse'
 import { DAILY_HABITS, WEEKLY_HABITS, type SessionCard } from './types'
 import { gradeStyle, shortDate } from './TrainerCards'
+import { habitPct } from './risk'
+import { AtRiskList } from './AtRiskList'
 
 /**
  * The owner's board: what is going on with every coach's clients, read off
@@ -119,6 +121,8 @@ export function CoachBoard({
         {error && <div style={{ color: color.red, marginTop: 14 }}>{error}</div>}
         {loading && <div style={{ color: color.muted, marginTop: 14 }}>Loading…</div>}
 
+        <AtRiskList user={user} trainers={trainers} onOpenClient={setOpenClient} />
+
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 12, marginTop: 16 }}>
           {trainers.map((t) => (
             <TrainerPanel
@@ -168,20 +172,7 @@ function Callout({ tone, title, children }: { tone: 'red' | 'amber'; title: stri
   )
 }
 
-/** Habit days hit over days available, across a set of cards. 0..100, or null. */
-export function habitPct(cards: SessionCard[]): number | null {
-  const done = cards.filter((c) => c.outcome === 'completed' && (c.daysSince ?? 0) > 0)
-  if (done.length === 0) return null
-  const total = done.reduce((s, c) => s + (c.daysSince ?? 0), 0)
-  const rates: number[] = []
-  for (const h of DAILY_HABITS) {
-    const hit = done.reduce((s, c) => s + (c.habits[h.key] ?? 0), 0)
-    rates.push(Math.min(1, hit / total))
-  }
-  const weeklyAnswers = done.flatMap((c) => WEEKLY_HABITS.map((h) => c.weekly[h.key]).filter((v) => v !== undefined))
-  if (weeklyAnswers.length > 0) rates.push(weeklyAnswers.filter(Boolean).length / weeklyAnswers.length)
-  return Math.round((100 * rates.reduce((a, b) => a + b, 0)) / rates.length)
-}
+export { habitPct }
 
 function TrainerPanel({
   trainer,
