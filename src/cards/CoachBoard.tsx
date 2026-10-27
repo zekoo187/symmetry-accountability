@@ -8,6 +8,7 @@ import { DAILY_HABITS, WEEKLY_HABITS, type SessionCard } from './types'
 import { gradeStyle, shortDate } from './TrainerCards'
 import { habitPct } from './risk'
 import { AtRiskList } from './AtRiskList'
+import { DuePanel } from './DuePanel'
 
 /**
  * The owner's board: what is going on with every coach's clients, read off
@@ -122,6 +123,7 @@ export function CoachBoard({
         {loading && <div style={{ color: color.muted, marginTop: 14 }}>Loading…</div>}
 
         <AtRiskList user={user} trainers={trainers} onOpenClient={setOpenClient} />
+        <DuePanel user={user} trainers={trainers} />
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 12, marginTop: 16 }}>
           {trainers.map((t) => (
