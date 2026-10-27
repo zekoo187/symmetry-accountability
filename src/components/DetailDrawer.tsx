@@ -51,7 +51,7 @@ export function DetailDrawer({
     const m = members.find((x) => x.id === drawer.id)
     if (m) {
       title = m.name
-      subtitle = `${m.role} · ${week.short}`
+      subtitle = m.role ? `${m.role} · ${week.short}` : week.short
       const isNudged = !!nudged[`${weekId}:${m.id}`]
       body = (
         <>
@@ -59,7 +59,7 @@ export function DetailDrawer({
             <Avatar initials={m.initials} bg={m.avatarBg} size={46} fontSize={15} />
             <div style={{ flex: 1 }}>
               <div style={{ fontWeight: 600, fontSize: 16 }}>{m.name}</div>
-              <div style={{ fontSize: 12.5, color: color.muted }}>{m.role}</div>
+              {m.role && <div style={{ fontSize: 12.5, color: color.muted }}>{m.role}</div>}
             </div>
             <StatusPill label={m.statusLabel} bg={m.statusBg} fg={m.statusFg} fontSize={12.5} />
           </div>

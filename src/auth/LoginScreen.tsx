@@ -215,7 +215,7 @@ function MockLogin({ mockSignIn }: { mockSignIn: (u: CurrentUser) => void }) {
           <Avatar initials={t.initials} bg={t.avatarBg} size={34} />
           <span style={{ flex: 1 }}>
             <span style={{ display: 'block', fontWeight: 600 }}>{t.name}</span>
-            <span style={{ display: 'block', fontSize: 11.5, color: color.faint }}>{t.role}</span>
+            {t.role && <span style={{ display: 'block', fontSize: 11.5, color: color.faint }}>{t.role}</span>}
           </span>
           <span style={{ color: color.faint }}>▸</span>
         </button>

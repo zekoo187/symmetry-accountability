@@ -180,7 +180,7 @@ export function MobileDashboard(props: {
                     <Avatar initials={m.initials} bg={m.avatarBg} size={34} fontSize={12} />
                     <div style={{ flex: 1 }}>
                       <div style={{ fontWeight: 600, fontSize: 14.5 }}>{m.name}</div>
-                      <div style={{ fontSize: 11.5, color: color.muted }}>{m.role}</div>
+                      {m.role && <div style={{ fontSize: 11.5, color: color.muted }}>{m.role}</div>}
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 3 }}>
                       <StatusPill label={m.statusLabel} bg={m.statusBg} fg={m.statusFg} fontSize={11} />

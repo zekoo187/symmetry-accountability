@@ -92,7 +92,7 @@ export function TrainerView({ user }: { user: CurrentUser }) {
           <Avatar initials={m.initials} bg={m.avatarBg} size={46} fontSize={15} />
           <div style={{ flex: 1 }}>
             <div style={{ fontWeight: 600, fontSize: 17 }}>{m.name}</div>
-            <div style={{ fontSize: 12.5, color: color.muted }}>{m.role} · your clients</div>
+            <div style={{ fontSize: 12.5, color: color.muted }}>{m.role ? `${m.role} · ` : ''}your clients</div>
           </div>
           <StatusPill label={m.statusLabel} bg={m.statusBg} fg={m.statusFg} fontSize={12.5} />
         </div>

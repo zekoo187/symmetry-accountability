@@ -17,10 +17,10 @@ const cl = (name: string, water: number, weekly: number, win = ''): ClientChecki
 })
 
 export const ROSTER: Trainer[] = [
-  { id: 'PA', name: 'Paola', initials: 'PA', role: 'Strength', avatarBg: '#4C6EF5' },
-  { id: 'RO', name: 'Roma', initials: 'RO', role: 'HIIT', avatarBg: '#E2603A' },
-  { id: 'NA', name: 'Natalia', initials: 'NA', role: 'Mobility', avatarBg: '#C98A16' },
-  { id: 'SA', name: 'Santiago', initials: 'SA', role: 'Strength', avatarBg: '#2E7D5B' },
+  { id: 'PA', name: 'Paola', initials: 'PA', role: '', avatarBg: '#4C6EF5' },
+  { id: 'RO', name: 'Roma', initials: 'RO', role: '', avatarBg: '#E2603A' },
+  { id: 'NA', name: 'Natalia', initials: 'NA', role: '', avatarBg: '#C98A16' },
+  { id: 'SA', name: 'Santiago', initials: 'SA', role: '', avatarBg: '#2E7D5B' },
 ]
 
 // The new-in-2026 fields default in build(), so the sample entries below stay untouched.

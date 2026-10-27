@@ -338,11 +338,11 @@ export function DesktopDashboard(props: {
                         <span style={{ color: color.faint, fontSize: 11, width: 9 }}>▸</span>
                         <span>
                           <span style={{ display: 'block', fontWeight: 500 }}>{m.name}</span>
-                          <span
-                            style={{ display: 'block', fontSize: 11.5, color: color.faint }}
-                          >
-                            {m.role}
-                          </span>
+                          {m.role && (
+                            <span style={{ display: 'block', fontSize: 11.5, color: color.faint }}>
+                              {m.role}
+                            </span>
+                          )}
                         </span>
                       </div>
                       <div className="sg" style={{ fontWeight: 700, fontSize: 17 }}>
