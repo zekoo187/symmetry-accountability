@@ -5,6 +5,7 @@
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import type { CurrentUser, Retention } from '../lib/types'
 import type { Grade, Outcome, Pain, SessionCard, SessionCardInput } from './types'
+import type { Milestone, MilestoneKind } from './due'
 import { WEEKS } from '../data/seed'
 
 export interface ClientRef {
@@ -12,6 +13,17 @@ export interface ClientRef {
   trainerId: string
   name: string
   retention: Retention
+  /** When the client started, set by the coach; null until set. */
+  startedOn: string | null
+}
+
+export interface MilestoneInput {
+  clientId: string
+  trainerId: string
+  kind: MilestoneKind
+  dueOn: string | null
+  doneOn: string
+  note: string
 }
 
 export interface CardsApi {
@@ -25,6 +37,12 @@ export interface CardsApi {
   saveCard(user: CurrentUser, input: SessionCardInput): Promise<SessionCard>
   /** A short-lived URL for a card photo, or null when it cannot be served. */
   photoUrl(path: string): Promise<string | null>
+  /** Check-ins and re-tests already done (owner: all; trainer: own). */
+  listMilestones(user: CurrentUser): Promise<Milestone[]>
+  /** Record a check-in or re-test as done. */
+  markMilestone(user: CurrentUser, input: MilestoneInput): Promise<Milestone>
+  /** Set (or clear) a client's start date. */
+  setStartedOn(user: CurrentUser, clientId: string, startedOn: string | null): Promise<void>
 }
 
 interface CardRow {
@@ -131,6 +149,20 @@ export async function compressPhoto(file: File, maxEdge = 1400, quality = 0.72):
   )
 }
 
+interface MilestoneRow {
+  id: string
+  client_id: string
+  trainer_id: string
+  kind: MilestoneKind
+  due_on: string | null
+  done_on: string
+  note: string
+}
+
+function milestoneFromRow(r: MilestoneRow): Milestone {
+  return { id: r.id, clientId: r.client_id, trainerId: r.trainer_id, kind: r.kind, dueOn: r.due_on, doneOn: r.done_on, note: r.note ?? '' }
+}
+
 // ---------------------------------------------------------------- Supabase
 const sb = () => {
   if (!supabase) throw new Error('Supabase is not configured')
@@ -146,14 +178,44 @@ async function clientNames(ids: string[]): Promise<Map<string, string>> {
 
 const supabaseCards: CardsApi = {
   async listClients(): Promise<ClientRef[]> {
-    const { data, error } = await sb().from('clients').select('id,trainer_id,name,retention').order('name')
+    const { data, error } = await sb().from('clients').select('id,trainer_id,name,retention,started_on').order('name')
     if (error) throw error
-    return (data as { id: string; trainer_id: string; name: string; retention: Retention | null }[]).map((c) => ({
+    return (data as { id: string; trainer_id: string; name: string; retention: Retention | null; started_on: string | null }[]).map((c) => ({
       id: c.id,
       trainerId: c.trainer_id,
       name: c.name,
       retention: c.retention ?? 'active',
+      startedOn: c.started_on ?? null,
     }))
+  },
+
+  async listMilestones(): Promise<Milestone[]> {
+    const { data, error } = await sb().from('client_milestones').select('*').order('done_on', { ascending: false })
+    if (error) throw error
+    return (data as MilestoneRow[]).map(milestoneFromRow)
+  },
+
+  async markMilestone(user, input): Promise<Milestone> {
+    const { data, error } = await sb()
+      .from('client_milestones')
+      .insert({
+        client_id: input.clientId,
+        trainer_id: input.trainerId,
+        kind: input.kind,
+        due_on: input.dueOn,
+        done_on: input.doneOn,
+        note: input.note,
+        created_by: user.id,
+      })
+      .select('*')
+      .single()
+    if (error) throw error
+    return milestoneFromRow(data as MilestoneRow)
+  },
+
+  async setStartedOn(_user, clientId, startedOn): Promise<void> {
+    const { error } = await sb().from('clients').update({ started_on: startedOn }).eq('id', clientId)
+    if (error) throw error
   },
 
   async listCards(_user, fromISO, toISO): Promise<SessionCard[]> {
@@ -236,17 +298,44 @@ function lsRead(): SessionCard[] {
 function lsWrite(cards: SessionCard[]) {
   localStorage.setItem(LS_KEY, JSON.stringify(cards))
 }
+const MS_KEY = 'symmetry.milestones.v1'
+const START_KEY = 'symmetry.clientStart.v1'
+function lsGet<T>(key: string, fallback: T): T {
+  try {
+    return JSON.parse(localStorage.getItem(key) ?? '') as T
+  } catch {
+    return fallback
+  }
+}
 
 const mockCards: CardsApi = {
   async listClients(user): Promise<ClientRef[]> {
     // The demo roster lives in the seed; mirror it from the weeks the app
     // already loaded by reading the mock adapter's seed indirectly.
     const out: ClientRef[] = []
+    const starts = lsGet<Record<string, string | null>>(START_KEY, {})
     for (const m of WEEKS[0].members) {
       if (user.role === 'trainer' && m.id !== user.trainerId) continue
-      for (const c of m.clients) out.push({ id: `${m.id}:${c.name}`, trainerId: m.id, name: c.name, retention: c.retention })
+      for (const c of m.clients) {
+        const id = `${m.id}:${c.name}`
+        out.push({ id, trainerId: m.id, name: c.name, retention: c.retention, startedOn: starts[id] ?? null })
+      }
     }
     return out
+  },
+  async listMilestones(user) {
+    return lsGet<Milestone[]>(MS_KEY, []).filter((m) => user.role === 'owner' || m.trainerId === user.trainerId)
+  },
+  async markMilestone(_user, input) {
+    const all = lsGet<Milestone[]>(MS_KEY, [])
+    const m: Milestone = { id: `ms-${Date.now()}`, ...input }
+    localStorage.setItem(MS_KEY, JSON.stringify([...all, m]))
+    return m
+  },
+  async setStartedOn(_user, clientId, startedOn) {
+    const starts = lsGet<Record<string, string | null>>(START_KEY, {})
+    starts[clientId] = startedOn
+    localStorage.setItem(START_KEY, JSON.stringify(starts))
   },
   async listCards(user, fromISO, toISO) {
     return lsRead()

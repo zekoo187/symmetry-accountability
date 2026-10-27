@@ -139,3 +139,13 @@ supabase/
 
 All colours, spacing, and thresholds live in `src/lib/tokens.ts` and `src/lib/derive.ts`,
 lifted directly from the design handoff. Change the look in one place.
+
+### Due tracking (Oct 2026)
+
+The two-week check-in and the week-8 re-test, per client. `src/cards/due.ts` (pure,
+tested): check-ins fall every 14 days from the client's start date or the last
+check-in done; re-tests every 56 days. The start date is set by the coach in the Due
+panel (clients without one are listed there); until set, the first card on file is
+used. Marking done writes a row to `client_milestones` (migration 0006, RLS: owner or
+own trainer). Owners see every coach's list on the Session cards board; coaches see
+their own above their cards.

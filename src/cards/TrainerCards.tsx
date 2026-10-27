@@ -7,6 +7,7 @@ import { SessionCardForm } from './SessionCardForm'
 import { sessionPatterns } from './parse'
 import { GRADES, type SessionCard } from './types'
 import { AtRiskList } from './AtRiskList'
+import { DuePanel } from './DuePanel'
 
 /** The coach's side: a button to log a session and the last 14 days of cards. */
 export function TrainerCards({ user, trainerId }: { user: CurrentUser; trainerId: string }) {
@@ -76,6 +77,7 @@ export function TrainerCards({ user, trainerId }: { user: CurrentUser; trainerId
 
       <div style={{ marginTop: 12 }}>
         <AtRiskList user={user} trainers={[]} trainerId={trainerId} refreshKey={cards.length} />
+        <DuePanel user={user} trainers={[]} trainerId={trainerId} refreshKey={cards.length} />
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 12 }}>
