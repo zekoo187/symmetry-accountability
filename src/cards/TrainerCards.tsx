@@ -6,6 +6,7 @@ import { cardsApi, daysBefore, todayISO, type ClientRef } from './cardsApi'
 import { SessionCardForm } from './SessionCardForm'
 import { sessionPatterns } from './parse'
 import { GRADES, type SessionCard } from './types'
+import { AtRiskList } from './AtRiskList'
 
 /** The coach's side: a button to log a session and the last 14 days of cards. */
 export function TrainerCards({ user, trainerId }: { user: CurrentUser; trainerId: string }) {
@@ -72,6 +73,10 @@ export function TrainerCards({ user, trainerId }: { user: CurrentUser; trainerId
       </div>
 
       {error && <div style={{ color: color.red, fontSize: 12.5, marginTop: 8 }}>{error}</div>}
+
+      <div style={{ marginTop: 12 }}>
+        <AtRiskList user={user} trainers={[]} trainerId={trainerId} refreshKey={cards.length} />
+      </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 12 }}>
         {cards.map((c) => (

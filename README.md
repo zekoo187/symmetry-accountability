@@ -111,6 +111,17 @@ Data: `session_cards` table (migration `0005_session_cards.sql`, RLS: owners
 see all, a trainer only their own) and a private `cards` storage bucket for
 the photos, shrunk to ~1400px on the phone before upload.
 
+### At-risk list (Oct 2026)
+
+Worked out from the last 60 days of session cards, nothing else: `src/cards/risk.ts`
+(pure, tested with `npm test`). Signals: too long since the last session for that
+client's own rhythm (median gap between sessions; weekly client → watch at 10 days,
+urgent at 14), two missed in a row, left without the next session booked, a pain
+flag, habits under 35% over the last three sessions, two of the last three graded
+low, or the coach's own at-risk flag. Owners see every coach's list on the Session
+cards board (with "Copy for chat"); each coach sees their own above their cards.
+Clients with no card in 60 days are listed separately. Clients marked lost are skipped.
+
 ## Project structure
 
 ```
