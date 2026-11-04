@@ -37,9 +37,9 @@ export interface CardsApi {
   saveCard(user: CurrentUser, input: SessionCardInput): Promise<SessionCard>
   /** A short-lived URL for a card photo, or null when it cannot be served. */
   photoUrl(path: string): Promise<string | null>
-  /** Check-ins and re-tests already done (owner: all; trainer: own). */
+  /** Check-ins and Symmetry checks already done (owner: all; trainer: own). */
   listMilestones(user: CurrentUser): Promise<Milestone[]>
-  /** Record a check-in or re-test as done. */
+  /** Record a check-in or Symmetry check as done. */
   markMilestone(user: CurrentUser, input: MilestoneInput): Promise<Milestone>
   /** Set (or clear) a client's start date. */
   setStartedOn(user: CurrentUser, clientId: string, startedOn: string | null): Promise<void>

@@ -1,10 +1,10 @@
 /**
- * Due tracking: the two-week check-in and the week-8 re-test.
+ * Due tracking: the two-week check-in and the eight-week Symmetry check.
  *
  * Pure. A client has a start date (set by the coach, or failing that the
  * date of their first card). Check-ins are due every 14 days from the start
- * or from the last check-in done; re-tests every 56 days from the start or
- * the last re-test done. Nothing is pre-generated.
+ * or from the last check-in done; Symmetry checks every 56 days from the start
+ * or the last one done. Nothing is pre-generated.
  */
 import { daysBetween } from './risk'
 import type { SessionCard } from './types'
@@ -13,7 +13,7 @@ export type MilestoneKind = 'checkin' | 'retest'
 
 export const MILESTONES: Record<MilestoneKind, { label: string; everyDays: number }> = {
   checkin: { label: '2-week check-in', everyDays: 14 },
-  retest: { label: 'Week-8 re-test', everyDays: 56 },
+  retest: { label: 'Symmetry check', everyDays: 56 },
 }
 
 export interface Milestone {
@@ -44,7 +44,7 @@ export interface DueItem<C extends DueClient = DueClient> {
   daysLeft: number
   status: DueStatus
   lastDoneOn: string | null
-  /** Which occurrence this is: 1 = the first check-in / re-test. */
+  /** Which occurrence this is: 1 = the first check-in / Symmetry check. */
   nth: number
 }
 
