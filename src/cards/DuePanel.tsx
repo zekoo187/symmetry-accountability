@@ -7,7 +7,7 @@ import type { SessionCard } from './types'
 import { shortDate } from './TrainerCards'
 
 /**
- * What is due: the two-week check-in and the week-8 re-test, per client,
+ * What is due: the two-week check-in and the eight-week Symmetry check, per client,
  * from the client's start date and what has already been marked done.
  * Coaches mark them done here; owners see every coach's list.
  */
@@ -112,8 +112,8 @@ export function DuePanel({
         </div>
         <div style={{ fontSize: 12, color: color.muted }}>
           {overdue.length + thisWeek.length === 0
-            ? `Nothing due this week. ${MILESTONES.checkin.label} every ${MILESTONES.checkin.everyDays} days, ${MILESTONES.retest.label.toLowerCase()} every ${MILESTONES.retest.everyDays}, from each client's start date.`
-            : `${MILESTONES.checkin.label} every ${MILESTONES.checkin.everyDays} days, ${MILESTONES.retest.label.toLowerCase()} every ${MILESTONES.retest.everyDays}, from each client's start date. Tap Done when it has happened.`}
+            ? `Nothing due this week. ${MILESTONES.checkin.label} every ${MILESTONES.checkin.everyDays} days, ${MILESTONES.retest.label} every ${MILESTONES.retest.everyDays}, from each client's start date.`
+            : `${MILESTONES.checkin.label} every ${MILESTONES.checkin.everyDays} days, ${MILESTONES.retest.label} every ${MILESTONES.retest.everyDays}, from each client's start date. Tap Done when it has happened.`}
         </div>
       </div>
 
